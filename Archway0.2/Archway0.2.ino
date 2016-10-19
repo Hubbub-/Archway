@@ -1,3 +1,16 @@
+/* 
+  Arco
+  by Hubbub
+  (Reuben Poharama, Braeden Foster and Martin Hill)
+  
+  1. Measure light cast on array of LDRs (light dependant resistors)
+  2. Infer movement of shadows
+  3. Use placement and movement to control LED strips
+
+
+  Makes use of the Adafruit NeoPixel library and the HSBColor Library
+*/
+
 #include <Adafruit_NeoPixel.h>
 #include <HSBColor.h>
 
