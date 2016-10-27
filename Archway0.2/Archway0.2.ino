@@ -13,12 +13,15 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <HSBColor.h>
+#include <EEPROM.h>
 
 #define NUMLDRS 4
 
 // Define pin and pixel number for LEDs
-#define PIN            3
-#define NUMPIXELS      300   //18*3=54  ,  strip=300
+#define PIXELPIN1      3
+#define PIXELPIN2      4
+#define NUMLEDS        300   //Number of LEDs per strip
+#define NUMPIXELS      600   //Total number of LEDs (both strips)
 #define NUMLEADS       4     //number of lead pixels
 
 
@@ -31,12 +34,15 @@
 // pin to read the LDRs
 #define LDRpin 14
 
-//setup the NeoPixel library, tell it how many pixels, and which pin to use.
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+#define brightAddress 0
 
-int red;
-int green;
-int blue;
+//setup the NeoPixel library, tell it how many pixels, and which pin to use.
+Adafruit_NeoPixel pixels1 = Adafruit_NeoPixel(NUMPIXELS, PIXELPIN1, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels2 = Adafruit_NeoPixel(NUMPIXELS, PIXELPIN2, NEO_GRB + NEO_KHZ800);
+
+byte red[NUMPIXELS];
+byte green[NUMPIXELS];
+byte blue[NUMPIXELS];
 
 //initial pixel colour
 int pColour[] = {255,0,0};
@@ -74,14 +80,21 @@ int LEDSpawnNum[] = {0,18,36,54};
 bool printLDRs;
 bool printTrigs;
 bool printPixels;
+byte bright;  //how bright the pixels are
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
+
+
 
 
 
 //---------------------------start of setup---------------------------------
 
 void setup() {
+  // Read EEPROM
+  bright = EEPROM.read(brightAddress);
+  if(bright<0) bright = 0;           // Limit the volume between 0 and 100
+  if(bright>255) bright = 255;
 
   // Start Serial
   Serial.begin(115200);
@@ -94,12 +107,20 @@ void setup() {
   pinMode(LDRpin, INPUT);
   digitalWrite(shiftClear, HIGH);
 
-  // Start Neo Pixels and make them white
-  pixels.begin();
-  for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, pixels.Color(255,255,255));
+  // Start Neo Pixels and make them fade to white
+  pixels1.begin();
+  pixels2.begin();
+  for(int i=0; i<100; i++){
+    float b = i*0.01*bright;
+    for(int j=0; j<NUMPIXELS; j++){
+      pixels1.setPixelColor(j, pixels1.Color(b,b,b));
+      pixels2.setPixelColor(j, pixels2.Color(b,b,b));
+    }
+    pixels1.show();
+    pixels2.show();
+    delay(1);
   }
-  pixels.show();
+  
 
   // Set max and min brightness (These change constantly)
   for (int i=0; i<NUMLDRS; i++){
@@ -109,8 +130,10 @@ void setup() {
   
   // Set all printing to false
   printLDRs = false;
-  printLEDs = false;
+  printPixels = false;
   printTrigs = false;
+
+  Serial.println("Setup done, send 'i' for info");
 }
 
 
@@ -146,14 +169,22 @@ void loop() {
     if (leadPixel[i] >= NUMPIXELS){   // if the pixel gets to the end
       leadPixel[i] = 0;               // put it at the start
       float hue = random(0,100)*0.01; // with a random colour
-      H2R_HSBtoRGBfloat(hue, 1.0, 1.0, pColour);
+      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour);
     }
     else if (leadPixel[i] <0){        // if the pixel gets to the start
       leadPixel[i] = NUMPIXELS;       // put it at the end
       float hue = random(0,100)*0.01; // with a random colour
-      H2R_HSBtoRGBfloat(hue, 1.0, 1.0, pColour);
-    } 
+      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour);
+    }
+    if(printPixels){
+      Serial.print("Pixel");
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.print(leadPixel[i]);
+      Serial.print(" | "); 
+    }
   }
+  if(printPixels) Serial.println(" ");
   
 
   //  maxBright -= 0.01;
@@ -200,24 +231,12 @@ void loop() {
 
 
 
-  // apply colour to the pixels
-  for (int i = 0; i < NUMPIXELS; i++) {
-    if (i == int(leadPixel[0])) {
-      red = pColour[0];
-      green = pColour[1];
-      blue = pColour[2];
-    }
 
-    else {
-      red = 0;
-      green = 0;
-      blue = 5;
-    }
-
-  }
+  
   // apply colour to only the Lead pixel (this needs to change)
-  pixels.setPixelColor(int(leadPixel[0]), pixels.Color(pColour[0], pColour[1], pColour[2]));
-  pixels.show(); // This sends the updated pixel color to the hardware.
+  applyColour(leadPixel[0], pColour[0], pColour[1], pColour[2]);
+  pixels1.show(); // This sends the updated pixel color to the hardware.
+  pixels2.show();
 
 }
 
@@ -257,7 +276,6 @@ void trig(int LDR) {
   }
 
   else if(LDR<NUMLDRS){
-    Serial.print(" Not last ");
     if(t-trigTime[LDR+1] <1000){
       targetVel = vel-mapFloat(t - trigTime[LDR+1], 600, 0, 0.0, 0.13);  // Set the target velocity
       if(printTrigs){
@@ -266,7 +284,7 @@ void trig(int LDR) {
       }
     }
   }
-  Serial.println(" ");
+  if(printTrigs)Serial.println(" ");
   //limit the velocity
   if(targetVel>0.6) targetVel=0.6;
   else if(targetVel<-0.6) targetVel=-0.6;
@@ -340,6 +358,24 @@ int multiMap(int val, int* _in, int* _out, uint8_t size)
 }
 
 
+// Apply pixel colours to the right strip
+void applyColour(float pixelin, int red, int green, int blue){
+  int pixel = (int) pixelin;
+  // strip1
+  if(pixel%2 == 0){
+    int p = pixel/2;
+    pixels1.setPixelColor(p, pixels1.Color(red,green,blue));
+  }
+  
+  // strip2 
+  if(pixel%2 == 1){
+    int p = (pixel-1)/2;
+    pixels2.setPixelColor(p, pixels2.Color(red,green,blue));
+  }
+}
+
+
+
 // Read from serial
 void serialEvent() {
   while (Serial.available()) {
@@ -360,23 +396,25 @@ void serialEvent() {
     Serial.print("String in: ");
     Serial.println(inputString);
 
-    String numberString = inputString.substring(1,8);  // Get number following "v"
+    String numberString = inputString.substring(1,8);  // Get number following letter
     int numberIn = numberString.toInt();        // Convert number string to int
 
     // Get info by sending "i"
     if(inputString.startsWith("i")){  
-      Serial.print("printLDRs(s): ");
+      Serial.print("printPixels(p): ");
       Serial.println(printLDRs);
       Serial.print("printLEDs(l): ");
-      Serial.println(printLEDs);
+      Serial.println(printPixels);
       Serial.print("printTrigs(t): ");
       Serial.println(printTrigs);
+      Serial.print("bright(b): ");
+      Serial.println(bright);
     }
     
 
     // Control printing pixel values with "p"
     else if(inputString.startsWith("p")){
-      printLDRs=!printPixels;
+      printPixels=!printPixels;
       Serial.print("printPixels(p): ");
       Serial.println(printPixels);
     }
@@ -384,16 +422,29 @@ void serialEvent() {
     // Control printing LDR values with "l"
     else if(inputString.startsWith("l")){
       printLDRs=!printLDRs;
-      Serial.print("printLDRs(s): ");
+      Serial.print("printLDRs(l): ");
       Serial.println(printLDRs);
     }
 
     // Control printing trigger values with "t"
     else if(inputString.startsWith("t")){
-      printLDRs=!printTrigs;
+      printTrigs=!printTrigs;
       Serial.print("printTrigs(t): ");
       Serial.println(printTrigs);
     }
+
+    // Control the brightness with string, examples: "b13" "b0" "b255"
+    else if(inputString.startsWith("b")){  // Volume string
+      bright = numberIn;              // Change the volume
+      if(bright<0) bright = 0;           // Limit the brightness between 0 and 255
+      if(bright>255) bright = 255;
+      pixels1.setBrightness(bright);
+      pixels2.setBrightness(bright);
+      EEPROM.write(brightAddress, byte(bright));  // Save the brightness to eeprom
+      Serial.print("bright(b...): ");
+      Serial.println(bright);
+    }
+
 
     
     Serial.println("-----------------------");
@@ -403,4 +454,7 @@ void serialEvent() {
     stringComplete = false;
   }
 }
+
+
+
 
