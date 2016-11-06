@@ -49,8 +49,8 @@ byte red[NUMPIXELS];
 byte green[NUMPIXELS];
 byte blue[NUMPIXELS];
 
-//initial pixel colour
-int pColour[NUMLEADS] = {255,0,0};
+//initial pixel colours
+int pColour[NUMLEADS][3];
 
 
 float LDR[NUMLDRS];
@@ -87,13 +87,14 @@ bool printTrigs;
 bool printPixels;
 bool printMoves;
 byte bright;  //how bright the pixels are
+
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
 
 // PIR sensors
 bool movement = false;
-int PIRpin[] = {0,1,2,5};
+int PIRpin[] = {1,2,5,6};
 
 
 
@@ -109,6 +110,10 @@ void setup() {
   Serial.begin(115200);
 
   // Setup pins
+  for(int i=0; i<4; i++){
+    pinMode(PIRpin[i], INPUT);
+  }
+  
   pinMode(shiftClear, OUTPUT);
   pinMode(shiftClock, OUTPUT);
   pinMode(shiftLive, OUTPUT);
@@ -135,6 +140,13 @@ void setup() {
   for (int i=0; i<NUMLDRS; i++){
     maxBright[i] = initMaxBright;
     minBright[i] = initMinBright;
+  }
+
+  // Initialise pColour array
+  for(int i=0; i<NUMLEADS; i++){
+    for(int j=0; i<3; j++){
+      pColour[i][j] = random(255);
+    }
   }
   
   // Set all printing to false
@@ -193,19 +205,19 @@ void loop() {
     if (leadPixelPos[i] >= NUMPIXELS){   // if the pixel gets to the end
       leadPixelPos[i] = 0;               // put it at the start
       float hue = random(0,100)*0.01; // with a random colour
-      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour);
+      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour[i]);
     }
     else if (leadPixelPos[i] <0){        // if the pixel gets to the start
       leadPixelPos[i] = NUMPIXELS;       // put it at the end
       float hue = random(0,100)*0.01; // with a random colour
-      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour);
+      H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour[i]);
     }
     if(printPixels){
       Serial.print("Pixel");
       Serial.print(i);
       Serial.print(": ");
       Serial.print(leadPixelPos[i]);
-      Serial.print(" | "); 
+      Serial.print(" | ");
     }
   }
   if(printPixels) Serial.println(" ");
@@ -259,7 +271,9 @@ void loop() {
 
   
   // apply colour to only the Lead pixel (this needs to change)
-  applyColour(leadPixelPos[0], pColour[0], pColour[1], pColour[2]);
+  for(int i=0; i<NUMLEADS; i++){
+    applyColour(leadPixelPos[0], pColour[i][0], pColour[i][1], pColour[i][2]);
+  }
   pixels1.show(); // This sends the updated pixel color to the hardware.
   pixels2.show();
 
@@ -306,7 +320,9 @@ void trig(int LDR) {
     if (t-trigTime[LDR-1] < 1000){
       targetVel[leadP] = vel[leadP]+mapFloat(t - trigTime[LDR-1], 600, 0, 0.0, 0.13);  // Set the target velocity 
       if(printTrigs){
-        Serial.print("| set targetVel to:");
+        Serial.print("| set targetVel of [");
+        Serial.print(leadP);
+        Serial.print("] to: ");
         Serial.print(targetVel[leadP]);
       }
     }
@@ -443,13 +459,27 @@ void applyColour(float pixelin, int red, int green, int blue){
 
 // Check for movement
 void checkMovement(){
-  movement = false;
+  bool newMovement = false;
+  bool PIRbool[4];
   for(int i=0; i<4; i++){
-    if (digitalRead(PIRpin[i]) == HIGH) movement = true;
+    if (digitalRead(PIRpin[i]) == HIGH){
+      PIRbool[i] = true;
+      newMovement = true;
+    }
+    else PIRbool[i] = false;
   }
-  if(printMoves){
-//    Serial.print("movement: ");
-//    Serial.println(movement);
+  if(newMovement != movement){
+    movement = newMovement;  
+    if(printMoves){
+      Serial.print("movement: ");
+      for(int i=0; i<4; i++){
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.print(PIRbool[i]);
+        Serial.print(" | ");
+      }
+      Serial.println(" ");
+    }
   }
 }
 
@@ -511,6 +541,7 @@ void serialEvent() {
       Serial.println(printMoves);
       Serial.print("bright(b): ");
       Serial.println(bright);
+      Serial.println("randomise velocities(v)");
     }
     
 
@@ -537,10 +568,12 @@ void serialEvent() {
     
     // Control printing movement with "m"
     else if(inputString.startsWith("m")){
-      printMoves=!printMoves;
+      if(printMoves) printMoves=0;
+      else printMoves = 1;
       Serial.print("printMoves(m): ");
       Serial.println(printMoves);
     }
+
     
     // Control the brightness with string, examples: "b13" "b0" "b255"
     else if(inputString.startsWith("b")){  // Volume string
@@ -552,6 +585,31 @@ void serialEvent() {
       EEPROM.write(brightAddress, byte(bright));  // Save the brightness to eeprom
       Serial.print("bright(b...): ");
       Serial.println(bright);
+    }
+
+    // Control the hue with string, examples: "h13" "h0" "h255"
+    else if(inputString.startsWith("h")){  // Hue string
+      int colour[3];
+      float hueIn = numberIn;
+      H2R_HSBtoRGBfloat(hueIn/360, 1.0, bright, colour);
+      for(int i=0; i<NUMPIXELS; i++){
+        applyColour(i,colour[0],colour[1],colour[2]); 
+      }
+      
+      Serial.print("hue(h...): ");
+      Serial.println(hueIn);
+    }
+
+    else if(inputString.startsWith("v")){
+      for(int i=0; i<NUMLEADS; i++){
+        float newVel = random(-100, 100);
+        targetVel[i] = newVel/100;
+        Serial.print(" | targetVel[");
+        Serial.print(i);
+        Serial.print("]:");
+        Serial.print(targetVel[i]);
+      }
+      Serial.println("");
     }
 
 
