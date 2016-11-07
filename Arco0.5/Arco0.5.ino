@@ -23,8 +23,8 @@
 #define PIXELPIN2      4
 #define NUMLEDS        300   //Number of LEDs per strip
 #define NUMPIXELS      600   //Total number of LEDs (both strips)
-#define NUMLEADS       14    //number of lead pixels
-#define MAXVEL         10
+#define NUMLEADS       20    //number of lead pixels
+#define MAXVEL         30
 
 
 // pins for shift register                         _________
@@ -53,20 +53,26 @@ byte blue[NUMPIXELS];
 
 //initial pixel colours
 int pColour[NUMLEADS][3] = {
-  {255,0,0},
-  {0,255,0},
-  {0,0,255},
-  {255,255,0},
-  {255,0,255},
   {0,255,255},
-  {255,100,0},
-  {0,100,255},
-  {0,255,100},
-  {100,0,255},
-  {0,255,100},
-  {255,0,200},
-  {100,255,0},
-  {0,200,255}
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255},
+  {0,255,255}
 };
 
 
@@ -75,13 +81,17 @@ float prevLDR[NUMLDRS];
 float heldVal[NUMLDRS];
 unsigned int heldSince;
 float leadPixelPos[NUMLEADS];
-unsigned long lifeTime [NUMLEADS];
-bool lifeInc [NUMLEADS];  // is the lifetime increasing
+int lifeTime [NUMLEADS];   // how long it's been alive
+unsigned long lifeStart [NUMLEADS];  // time that the life started
+bool alive [NUMLEADS];               // is it alive
+int sensorHold [NUMLEADS];           // holds the value from the LDR when triggered
+float saturation[NUMLEADS];
+float hue[NUMLEADS];
 
 
 //maximum and minimum brightness to use for scaling
-int initMaxBright = 800;
-int initMinBright = 200;
+int initMaxBright = 300;
+int initMinBright = 100;
 int maxBright[NUMLDRS];
 int minBright[NUMLDRS];
 
@@ -96,7 +106,6 @@ float targetVelHigh[NUMLEADS];
 
 
 //Mapping when spawning new pixel
-int LDRSpawnNum[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13};
 int LEDSpawnNum[] = {22,64,107,150,193,236,279,322,364,407,450,493,536,579};
 
 
@@ -170,9 +179,9 @@ void setup() {
   printMoves = false;
 
   //Initiate Lead Pixels
-  for(int i=0; i<NUMLEADS; i++){
-    initLead(i);
-  }
+//  for(int i=0; i<NUMLEADS; i++){
+//    initLead(i);
+//  }
 
   Serial.println("Setup done, send 'i' for info");
 }
@@ -206,9 +215,13 @@ void loop() {
     int middle = minBright[i]+difference/2;
     
     if (heldSince == 0) {                   // if "heldsince" is greater than 
-      if (abs(heldVal[i] - LDR[i]) > middle*0.1) {  // if the change in reading is greater than 
+      if (abs(heldVal[i] - LDR[i]) > middle*0.12+10 && !alive[i]) {  // if there's a change in reading and the pixel isn't alive
         trig(i);                  // trigger the pixel spawn
+        sensorHold[i] = LDR[i];   // store the sensor value
       }
+//      if (abs(sensorHold[i] - LDR[i]) > middle*0.12){  // if the hand isn't there anymore
+//        alive[i] = false;
+//      }
       heldVal[i] = LDR[i];  // store the value
     }
 
@@ -229,21 +242,50 @@ void loop() {
 
   
   for (int i=0; i<NUMLEADS; i++){     // cycle through lead pixels
-    if (lifeInc[i]) lifeTime[i] ++;    // increase life time
-    else if (!lifeInc && lifeTime > 0) lifeTime[i] --; //decrease life time (unspawn)
+    
+    // -- TIMING --
+    if (alive[i]){
+      lifeTime[i] = millis() - lifeStart[i];    // update life time
+    }
+
+    
+    
+    if (lifeTime[i] < 100){       // first 0.1 seconds of life
+      float shortLifeTime = lifeTime[i];
+      saturation[i] = mapFloat(shortLifeTime,0.0,100.0,0,0.6);  // increase saturation
+    }
+    else if (lifeTime[i] > 100 && lifeTime[i] < 120){  // between 0.1 and 0.12 seconds
+      float shortLifeTime = lifeTime[i];
+      saturation[i] = mapFloat(shortLifeTime,100,120,0.6,1.0);
+    }
+    else if (lifeTime[i] > 150 && lifeTime[i] < 1500){    // more than 0.12 seconds
+      saturation[i] = 1.0;
+    }
+    else if (lifeTime[i] > 1500 && lifeTime[i] < 2500){
+      float shortLifeTime = lifeTime[i];
+      saturation[i] = mapFloat(shortLifeTime,1500,2500,1.0,0.0);
+    }
+    else if (lifeTime[i] > 2500){
+      delLead(i);
+    }
+
+    if(printPixels){
+      Serial.print("lifeTime ");
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.print(lifeTime[i]);
+      Serial.print(" | ");
+    }
+
+
+    
+
+    
     
     leadPixelPos[i] += vel[i];              // add the velocity
     
-    if (leadPixelPos[i] >= NUMPIXELS || leadPixelPos[i] <0){   // if the pixel gets to the end
-      initLead(i);
-    }
-    
-    if(printPixels){
-      Serial.print("Pixel");
-      Serial.print(i);
-      Serial.print(": ");
-      Serial.print(leadPixelPos[i]);
-      Serial.print(" | ");
+    if (leadPixelPos[i] >= NUMPIXELS || leadPixelPos[i] < 0){   // if the pixel gets to the end
+      delLead(i);
     }
   }
   if(printPixels) Serial.println(" ");
@@ -256,7 +298,7 @@ void loop() {
   for(int i=0; i<NUMLEADS; i++){
     //if the absolute velocity is slower than the absolute target, change quickly to the target
     if(abs(vel[i])<abs(targetVel[i]) && targetVel[i]!=0){
-      vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.03);
+      vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.06);
     }
     //if the absolute velocity is faster than absolute target, change slowly to the target
     //and set the target to 0 if it isn't already
@@ -281,41 +323,21 @@ void loop() {
     Serial.println(" ");
   }
 
-  //  Serial.print(" | max: ");
-  //  Serial.print(maxBright);
-  //  Serial.print(" | min: ");
-  //  Serial.println(minBright);
-//  Serial.print(" | targetVel: ");
-//  Serial.print(targetVel);
-//  Serial.print(" | vel: ");
-//  Serial.print(vel);
-//  Serial.print(" | pixel: ");
-//  Serial.print(leadPixelPos[0]);
-
 
 
   for(int i=0; i<NUMPIXELS; i++){
     applyColour(i,255,255,255);
   }
   
-  // apply colour to only the Lead pixels and surrounding LEDs
+  // apply colour to the Lead pixels and surrounding LEDs
   for(int i=0; i<NUMLEADS; i++){
-    for(int j=-25; j<25; j++){
-      applyColour(leadPixelPos[i]+j, pColour[i][0], pColour[i][1], pColour[i][2]);
+    if(saturation[i] > 0){
+      H2R_HSBtoRGBfloat(hue[i], saturation[i], bright, pColour[i]);
+      for(int j=-25; j<25; j++){
+        applyColour(leadPixelPos[i]+j, pColour[i][0], pColour[i][1], pColour[i][2]);
+      }
     }
   }
-
-  // Darken all pixels slowly
-//  for (int i=0; i<NUMLEDS; i++){
-//    Serial.println(i);
-//    byte R=(neoColor(pixels1,i,0)-1);
-//    byte G=(neoColor(pixels1,i,1)-1);
-//    byte B=(neoColor(pixels1,i,2)-1);
-//    pixels1.setPixelColor(i, R,G,B);
-//    
-//  }
-
-
   
   pixels1.show(); // This sends the updated pixel color to the hardware.
   pixels2.show();
@@ -333,66 +355,76 @@ void loop() {
 
 
 
-void initLead(int p){
-  leadPixelPos[p] = LEDSpawnNum[i];
-  lifeTime[p] = 0;
-  lifeInc[p] = false;
-  float hue = random(0,100)*0.01; // with a random colour
-  H2R_HSBtoRGBfloat(hue, 1.0, bright, pColour[p]);
+void initLead(int pos){
+  int index = 0;
+  while(alive[index]){
+    index++;
+  }
+  leadPixelPos[index] = LEDSpawnNum[pos];
+  lifeTime[index] = 0;
+  alive[index] = true;
+  lifeStart[index] = millis();
+  hue[index] = random(0,100)*0.01; // with a random colour
+  saturation[index] = 0;
 }
 
+void delLead(int index){
+  lifeTime[index] = 0;
+  alive[index] = false;
+  saturation[index] = 0;
+}
 
 
 
 void trig(int LDR) {
 
-  leadPixel
 
-// spawn a new lead pixel
-//  makeLead(multiMap();
-  
   unsigned long t = millis();
   trigTime[LDR] = t;  // set the initial trigger time
-  // Select the lead pixel to move
-  int leadP = leadPixelAt(LDR);
+  int leadBefore = leadPixelAt(LDR-1);
+  int leadAfter = leadPixelAt(LDR+1);
   
   if(printTrigs){
     Serial.print("Triggered LDR#");
     Serial.print(LDR);
-    Serial.print(" trigTime:");
-    Serial.print(trigTime[LDR]);
+    Serial.print(" leadBefore:");
+    Serial.print(leadBefore);
+    Serial.print(" leadAfter:");
+    Serial.print(leadAfter);
   }
   
-  if(LDR>0){
+  if(LDR>0 && alive[leadBefore] && inPlace(leadBefore)){
+    targetVel[leadBefore] = MAXVEL;
     if(printTrigs){
-      Serial.print(" prevTrigTime:");
-      Serial.print(trigTime[LDR-1]);
+      Serial.print(" | moving ");
+      Serial.print(leadBefore);
     }
-    if (t-trigTime[LDR-1] < 1000){
-      targetVel[leadP] = vel[leadP]+mapFloat(t - trigTime[LDR-1], 600, 0, 0.0, 10.0);  // Set the target velocity 
-      if(printTrigs){
-        Serial.print("| set targetVel of [");
-        Serial.print(leadP);
-        Serial.print("] to: ");
-        Serial.print(targetVel[leadP]);
-      }
+  }
+  else if(LDR<NUMLDRS-1 && alive[leadAfter] && inPlace(leadAfter)){
+    targetVel[leadAfter] = -MAXVEL;
+    if(printTrigs){
+      Serial.print(" | moving ");
+      Serial.print(leadAfter);
     }
   }
 
-  else if(LDR<NUMLDRS){
-    if(t-trigTime[LDR+1] <1000){
-      targetVel[leadP] = vel[leadP]-mapFloat(t - trigTime[LDR+1], 600, 0, 0.0, 10.0);  // Set the target velocity
-      if(printTrigs){
-        Serial.print("| set targetVel of [");
-        Serial.print(leadP);
-        Serial.print("] to: ");
-        Serial.print(targetVel[leadP]);
-      }
+  else if (livingPixelsAt(LDR)<1){
+    initLead(LDR);
+    if(printTrigs){
+      Serial.print(" | made leadPixel at ");
+      Serial.print(LDR);
     }
   }
+
   if(printTrigs)Serial.println(" ");
 
 
+}
+
+
+bool inPlace(int p){
+  if(abs(leadPixelPos[p] - LEDSpawnNum[p]) < 5) return true;
+  else return false;
 }
 
 
@@ -458,29 +490,6 @@ float fade(float current, float target, float amount){
 }
 
 
-//--------------------------------------------------------------------------
-
-
-
-// note: the _in array should have increasing values
-int multiMap(int val, int* _in, int* _out, uint8_t size)
-{
-  // take care the value is within range
-  // val = constrain(val, _in[0], _in[size-1]);
-  if (val <= _in[0]) return _out[0];
-  if (val >= _in[size-1]) return _out[size-1];
-
-  // search right interval
-  uint8_t pos = 1;  // _in[0] allready tested
-  while(val > _in[pos]) pos++;
-
-  // this will handle all exact "points" in the _in array
-  if (val == _in[pos]) return _out[pos];
-
-  // interpolate in the right segment for the rest
-  return (val - _in[pos-1]) * (_out[pos] - _out[pos-1]) / (_in[pos] - _in[pos-1]) + _out[pos-1];
-}
-
 
 //--------------------------------------------------------------------------
 
@@ -489,21 +498,21 @@ int multiMap(int val, int* _in, int* _out, uint8_t size)
 
 
 // Apply pixel colours to the right strip
-void applyColour(float pixelin, int red, int green, int blue){
+void applyColour(float pixelin, float red, float green, float blue){
   int pixel = (int) pixelin;
-  int redOut = red*(bright/255);
-  int greenOut = green*(bright/255);
-  int blueOut = blue*(bright/255);
+  int redOut = red*(bright/255.0);
+  int greenOut = green*(bright/255.0);
+  int blueOut = blue*(bright/255.0);
   // strip1
   if(pixel%2 == 0){
     int p = pixel/2;
-    pixels1.setPixelColor(p, pixels1.Color(red,green,blue));
+    pixels1.setPixelColor(p, pixels1.Color(redOut,greenOut,blueOut));
   }
   
   // strip2 
   if(pixel%2 == 1){
     int p = (pixel-1)/2;
-    pixels2.setPixelColor(p, pixels2.Color(red,green,blue));
+    pixels2.setPixelColor(p, pixels2.Color(redOut,greenOut,blueOut));
   }
 }
 
@@ -550,12 +559,26 @@ int leadPixelAt(int LDR){
   
   for(int i=0; i<NUMLEADS; i++){                      // cycle through leadPixels
     if(abs(leadPixelPos[i]-LDRpos) < separation/2){   // if the leadPixel is near the LDR
-      selectedPixel = i;                              // choose this pixel
+      if(alive[i]) selectedPixel = i;                              // if it's alive, choose this pixel
     }
   }
   return selectedPixel;
 }
 
+
+// How many living pixels near a certain LDR
+int livingPixelsAt(int LDR){
+  int count = 0;
+  int separation = 25;            // how far the LDRs are separated (by LEDs)
+  int LDRpos = LEDSpawnNum[LDR];  // Where on the LED strips is the LDR
+  
+  for(int i=0; i<NUMLEADS; i++){
+    if(abs(leadPixelPos[i]-LDRpos) < separation/2){   // if the leadPixel is near the LDR
+      if(alive[i]) count += 1;                        // if it's alive count this pixel
+    }
+  }
+  return count;
+}
 
 //--------------------------------------------------------------------------
 
