@@ -119,17 +119,17 @@ bool idle = true;
 void setup() {
   // Read EEPROM
   bright = EEPROM.read(brightAddress);
-  if(bright<0) bright = 0;           // Limit the volume between 0 and 100
+  if(bright<0) bright = 0;           // Limit the brightness between 0 and 255
   if(bright>255) bright = 255;
 
   // Start Serial
   Serial.begin(115200);
 
   // Setup pins
-  for(int i=0; i<4; i++){
+  for(int i=0; i<4; i++){      // PIR pins
     pinMode(PIRpin[i], INPUT);
   }
-  
+  // Shift register pins
   pinMode(shiftClear, OUTPUT);
   pinMode(shiftClock, OUTPUT);
   pinMode(shiftLive, OUTPUT);
@@ -152,7 +152,7 @@ void setup() {
   }
   
 
-  // Set max and min brightness (These change constantly)
+  // Set initial max and min brightness for each LDR
   for (int i=0; i<NUMLDRS; i++){
     maxBright[i] = initMaxBright;
     minBright[i] = initMinBright;
@@ -166,10 +166,7 @@ void setup() {
   printTrigs = false;
   printMoves = false;
 
-  //Initiate Lead Pixels
-//  for(int i=0; i<NUMLEADS; i++){
-//    initLead(i);
-//  }
+
 
   Serial.println("Setup done, send 'i' for info");
 }
@@ -204,25 +201,32 @@ void loop() {
     int middle = minBright[i]+difference/2;
     
     if (heldSince == 0) {                   // if "heldsince" is greater than 
-      if (abs(heldVal[i] - LDR[i]) > middle*0.12+10 && !alive[i]) {  // if there's a change in reading and the pixel isn't alive
-        trig(i);                  // trigger the pixel spawn
+      if (abs(heldVal[i]-LDR[i]) > middle*0.12+10 && !alive[i]) {  // if there's a change in reading and the pixel isn't alive
+        trig(i);                  // trigger the pixel spawn/explode
       }
 
-      heldVal[i] = LDR[i];  // store the value
+      heldVal[i] = LDR[i];  // store the value (for comparison next time)
     }
 
     
-    // bring closer together if far apart
+    // bring max and min brightness closer together if far apart
     if(difference > middle*0.1){
       maxBright[i] -= 0.001;    
       minBright[i] += 0.001;
     }
+    // set new max and min brightness
     if(LDR[i] > maxBright[i]) maxBright[i] = LDR[i];
     if(LDR[i] < minBright[i]) minBright[i] = LDR[i];
+
+    // print the LDR values if wanted
+    if(printLDRs){
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.print(LDR[i]);
+      Serial.print(" | ");  
+    }
   }
-
-
-
+  if(printLDRs) Serial.println(" ");
 
 
 
@@ -233,82 +237,35 @@ void loop() {
     if (alive[i]){
       lifeTime[i] = millis() - lifeStart[i];    // update life time
       
-      if(!exploding[i]){                      // if the section is not exploding, pulse
-        if(fadeUp[i]){
-          saturation[i] += FADESPEED;
-          if (saturation[i] >= 1) fadeUp[i] = false;
+      if(!exploding[i]){                      // if the block is not exploding, pulse
+        if(fadeUp[i]){                                // if it should fade up...
+          saturation[i] += FADESPEED;                 // fade up
+          if (saturation[i] >= 1) fadeUp[i] = false;  // if it reaches the top, start fading down
         }
-        else{
-          saturation[i] -= FADESPEED;
-          if (saturation[i] <= 0) fadeUp[i] = true;
+        else{                                         // if it should fade down...
+          saturation[i] -= FADESPEED;                 // fade down
+          if (saturation[i] <= 0) fadeUp[i] = true;   // if it reaches the bottom, start fading up
         }
       }
 
-      else if (exploding[i]){
-        if(leadSize[i] > 300){  // limit size
-          vel[i] = 0;
+      else if (exploding[i]){   // if the block is exploding
+        if(leadSize[i] > 300){  
+          vel[i] = 0;            // limit size
         }
-        leadSize[i] += vel[i];   // increase size
+        leadSize[i] += vel[i]; // increase size
       }
 
-      if(lifeTime[i] > 5000){
-        saturation[i] -= 0.01;  //fade out
+      if(lifeTime[i] > 5000){           // if the block is old
+        saturation[i] -= 0.01;          // fade out
         if(saturation <= 0){  
-          alive[i] = false;   // kill it off when faded
-          initLead(random(0,NUMLDRS));
+          alive[i] = false;             // kill it off when faded
+          initLead(random(0,NUMLDRS));  // initiate another block somewhere
         }
       }
     }
 
 
-
-  
-
-
-
-    
-//    
-//    if (lifeTime[i] < 120){       // first 0.1 seconds of life
-//      float shortLifeTime = lifeTime[i];
-//      saturation[i] = mapFloat(shortLifeTime,0.0,120.0,0,1.0);  // increase saturation
-//    }
-//    else if (lifeTime[i] > 100 && lifeTime[i] < 120){  // between 0.1 and 0.12 seconds
-//      float shortLifeTime = lifeTime[i];
-//      saturation[i] = mapFloat(shortLifeTime,100,120,0.6,1.0);
-//    }
-//    else if (lifeTime[i] > 150 && lifeTime[i] < 1500){    // more than 0.12 seconds
-//      saturation[i] = 1.0;
-//    }
-//    else if (lifeTime[i] > 1500 && lifeTime[i] < 2500){
-//      float shortLifeTime = lifeTime[i];
-//      saturation[i] = mapFloat(shortLifeTime,1500,2500,1.0,0.0);
-//    }
-//    else if (lifeTime[i] > 2500){
-//      delLead(i);
-//    }
-
-    if(printPixels){
-      Serial.print("leadLife ");
-      Serial.print(i);
-      Serial.print(":");
-      Serial.print(lifeTime[i]);
-      Serial.print(" front:");
-      Serial.print(front[i]);
-      Serial.print(" | ");
-    }
-
-
-    
-
-  }
-  if(printPixels) Serial.println(" ");
-  
-
-
-
-
-  // update velocities
-  for(int i=0; i<NUMLEADS; i++){
+    // Update Velocities
     //if the absolute velocity is slower than the absolute target, change quickly to the target
     if(abs(vel[i])<abs(targetVel[i]) && targetVel[i]!=0){
       vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.06);
@@ -322,27 +279,31 @@ void loop() {
     //limit the velocity
     if(targetVel[i]>MAXVEL) targetVel[i]=MAXVEL;
     else if(targetVel[i]<-MAXVEL) targetVel[i]=-MAXVEL;
+
+
+    
+
+    if(printPixels){
+      Serial.print("leadLife ");
+      Serial.print(i);
+      Serial.print(":");
+      Serial.print(lifeTime[i]);
+      if(exploding[i]) Serial.print(" Exploded!");
+      Serial.print(" | ");
+    }
+
+
   }
+  if(printPixels) Serial.println(" ");
   
 
-  // print the LDR values if wanted
-  if(printLDRs){
-    for(int i=0; i<NUMLDRS; i++){
-      Serial.print(i);
-      Serial.print(": ");
-      Serial.print(LDR[i]);
-      Serial.print(" | ");  
-    }
-    Serial.println(" ");
-  }
 
-
-
+  // Set Blueish White background
   for(int i=0; i<NUMPIXELS; i++){
     applyColour(i,200,200,255);
   }
   
-  // apply colour to the Lead pixel not in front
+  // apply colour to the exploded lead pixels not in front
   for(int i=0; i<NUMLEADS; i++){
     if(exploding[i] && !front[i]){
       H2R_HSBtoRGBfloat(hue[i], saturation[i], bright, pColour[i]);
@@ -362,7 +323,7 @@ void loop() {
     }
   }
 
-  // apply colour to the Lead pixels that have not exploded and surrounding LEDs
+  // apply colour to the Lead pixels that have not exploded
   for(int i=0; i<NUMLEADS; i++){
     if(!exploding[i]){
       H2R_HSBtoRGBfloat(hue[i], saturation[i], bright, pColour[i]);
@@ -387,26 +348,27 @@ void loop() {
 
 
 
-
+// initiate a lead pixel
 void initLead(int pos){
-
+  // Look through array of lead pixels for any that are dead
   int index = 0;
-  while(alive[index]){
+  while(alive[index]){  // Only look until a dead one is found
     index++;
-    if(index >= NUMLEADS){
-      index = random(0,NUMLEADS);
+    if(index >= NUMLEADS){        // If there are no dead ones...
+      index = random(0,NUMLEADS); // choose one at random
       break;
     }
   }
-  leadPixelPos[index] = LEDSpawnNum[pos];
-  alive[index] = true;
-  lifeStart[index] = millis();
-  hue[index] = random(0,100)*0.01; // with a random colour
-  saturation[index] = 0;
-  fadeUp[index] = true;
-  leadSize[index] = INITLEADSIZE;
-  exploding[index] = false;
-  front[index] = false;
+  // Replace selected pixel
+  leadPixelPos[index] = LEDSpawnNum[pos];  // put in correct place
+  alive[index] = true;                     // make alive
+  lifeStart[index] = millis();             // give lifeStart time
+  hue[index] = random(0,100)*0.01;         // a random colour
+  saturation[index] = 0;                   // start with no saturation (to fade in)
+  fadeUp[index] = true;                    // start lead pixel fading up
+  leadSize[index] = INITLEADSIZE;          // the initial size of the lead pixel
+  exploding[index] = false;                // make sure it's not exploding to start with
+  front[index] = false;                    // It's already in front of the exploeded ones
 
 }
 
@@ -416,8 +378,6 @@ void trig(int LDR) {
 
   unsigned long t = millis();
   trigTime[LDR] = t;  // set the initial trigger time
-//  int leadBefore = leadPixelAt(LDR-1);
-//  int leadAfter = leadPixelAt(LDR+1);
   
   if(printTrigs){
     Serial.print("Triggered LDR#");
@@ -434,13 +394,14 @@ void trig(int LDR) {
   
   else{       // if there is a lead pixel at the LDR
     int target = leadPixelAt(LDR);    // select the lead pixel
-    
-    if(lifeTime[target] > 500){
-      targetVel[target] = MAXVEL;       // change the target velocity
-      exploding[target] = true;           // make explode
-      saturation[target] = 1.0;
-      lifeStart[target] = millis();
-      putInFront(target);      // put it in front
+
+    // Explode it
+    if(lifeTime[target] > 500){       // only if it's old enough
+      targetVel[target] = MAXVEL;     // change the target velocity
+      exploding[target] = true;       // make explode
+      saturation[target] = 1.0;       // Full saturation
+      lifeStart[target] = millis();   // Restart life clock
+      putInFront(target);             // put it in front
       if(printTrigs){
         Serial.print(" | targetVel of[");
         Serial.print(target);
@@ -459,18 +420,6 @@ void trig(int LDR) {
 }
 
 
-bool inPlace(int p){
-  if(abs(leadPixelPos[p] - LEDSpawnNum[p]) < 5) return true;
-  else return false;
-}
-
-
-void putInFront(int p){
-  front[p] = true;
-  for(int i=0; i<NUMLEADS; i++){
-    if(i != p) front[i] = false;
-  }
-}
 
 //------------------------------------------------------------------------
 
@@ -498,47 +447,6 @@ void shiftReg() {
 
 
 //--------------------------------------------------------------------------
-
-
-
-
-// map function
-float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-
-//--------------------------------------------------------------------------
-
-
-//fade function
-float fade(float current, float target, float amount){
-  float result;
-  if(current < target){           // if the current value is less than the target
-    result = current + abs(amount);    // add the amount
-    if(result > target){          // 
-      result = target;
-    }
-  }
-  else if(current > target){
-    result = current - abs(amount);
-    if(result < target){
-      result = target;
-    }
-  }
-  else if(current == target){
-    result = target;
-  }
-  return result;
-}
-
-
-
-//--------------------------------------------------------------------------
-
-
-
 
 
 // Apply pixel colours to the right strip
@@ -603,7 +511,7 @@ int leadPixelAt(int LDR){
   
   for(int i=0; i<NUMLEADS; i++){                      // cycle through leadPixels
     if(abs(leadPixelPos[i]-LDRpos) < separation/2){   // if the leadPixel is near the LDR
-      if(alive[i]) selectedPixel = i;                              // if it's alive, choose this pixel
+      if(alive[i]) selectedPixel = i;                 // if it's alive, choose this pixel
     }
   }
   return selectedPixel;
@@ -611,22 +519,53 @@ int leadPixelAt(int LDR){
 
 
 
+
 //--------------------------------------------------------------------------
 
 
-// How many living pixels near a certain LDR
-int livingPixelsAt(int LDR){
-  int count = 0;
-  int separation = 25;            // how far the LDRs are separated (by LEDs)
-  int LDRpos = LEDSpawnNum[LDR];  // Where on the LED strips is the LDR
-  
+
+void putInFront(int p){
+  front[p] = true;
   for(int i=0; i<NUMLEADS; i++){
-    if(abs(leadPixelPos[i]-LDRpos) < separation/2){   // if the leadPixel is near the LDR
-      if(alive[i]) count += 1;                        // if it's alive count this pixel
+    if(i != p) front[i] = false;
+  }
+}
+
+
+//---------------------------------------------------
+
+// map function
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
+//--------------------------------------------------------------------------
+
+
+//fade function
+float fade(float current, float target, float amount){
+  float result;
+  if(current < target){           // if the current value is less than the target
+    result = current + abs(amount);    // add the amount
+    if(result > target){          // 
+      result = target;
     }
   }
-  return count;
+  else if(current > target){
+    result = current - abs(amount);
+    if(result < target){
+      result = target;
+    }
+  }
+  else if(current == target){
+    result = target;
+  }
+  return result;
 }
+
+
 
 //--------------------------------------------------------------------------
 
@@ -669,7 +608,6 @@ void serialEvent() {
       Serial.print("bright(b...): ");
       Serial.println(bright);
       Serial.println("force trigger(f...)");
-      Serial.println("randomise velocities(v)");
     }
     
 
@@ -703,8 +641,6 @@ void serialEvent() {
     }
 
     
-
-    
     // Control the brightness with string, examples: "b13" "b0" "b255"
     else if(inputString.startsWith("b")){  // Volume string
       bright = numberIn;              // Change the volume
@@ -717,37 +653,12 @@ void serialEvent() {
       Serial.println(bright);
     }
 
-    // Control the hue with string, examples: "h13" "h0" "h255"
-    else if(inputString.startsWith("h")){  // Hue string
-      int colour[3];
-      float hueIn = numberIn;
-      H2R_HSBtoRGBfloat(hueIn/360, 1.0, bright, colour);
-      for(int i=0; i<NUMPIXELS; i++){
-        applyColour(i,colour[0],colour[1],colour[2]); 
-      }
-      
-      Serial.print("hue(h...): ");
-      Serial.println(hueIn);
-    }
-
-    else if(inputString.startsWith("v")){
-      for(int i=0; i<NUMLEADS; i++){
-        float newVel = random(-MAXVEL, MAXVEL);
-        targetVel[i] = newVel;
-        Serial.print(" | targetVel[");
-        Serial.print(i);
-        Serial.print("]:");
-        Serial.print(targetVel[i]);
-      }
-      Serial.println("");
-    }
-
+    // Force trigger with "f..."
     else if(inputString.startsWith("f")){
       trig(numberIn);
     }
 
 
-    
     Serial.println("-----------------------");
 
     // clear the string:
