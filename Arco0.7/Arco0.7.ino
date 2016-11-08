@@ -94,7 +94,7 @@ float targetVel[NUMLEADS];
 
 
 //Mapping when spawning new pixel
-int LEDSpawnNum[] = {22,64,107,150,193,236,279,322,364,407,450,493,536,579};
+int LEDSpawnNum[] = {16,58,107,150,193,236,279,318,360,403,442,491,540,584};
 
 
 //whether or not to print information
@@ -251,8 +251,8 @@ void loop() {
         leadSize[i] += vel[i];   // increase size
       }
 
-      if(lifeTime[i] > 8000){
-        saturation[i] -= 0.1;  //fade out
+      if(lifeTime[i] > 5000){
+        saturation[i] -= 0.01;  //fade out
         if(saturation <= 0){  
           alive[i] = false;   // kill it off when faded
           initLead(random(0,NUMLDRS));
