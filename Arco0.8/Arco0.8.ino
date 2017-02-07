@@ -14,10 +14,8 @@
 
 
 #include <EEPROM.h>
-#include <FastLED.h>
+#include "FastLED.h"
 
-
-#define COLOR_ORDER GRB
 
 
 #define NUMLDRS 14
@@ -33,7 +31,7 @@
 #define INITLEADSIZE   25
 
 
-
+#define IDLEDELAY      60000   // milliseconds to wait before going idle
 
 
 // pins for shift register                         _________
@@ -49,11 +47,16 @@
 // pin to read the LDRs
 #define LDRpin 14
 
+// Define eeprom addresses
+#define brightAddress 9
+#define printLDRAddr 12
+#define printTrigAddr 14
+#define printPixelsAddr 16
+#define printMovesAddr 18
+#define printStripsAddr 20
 
-#define brightAddress 0
 
-
-int pixelType[NUMPIXELS];
+int pixelType[NUMPIXELS]; // 0:Nothing 1:Exploded 2:Not Exploded
 
 CRGB pixels1[NUMLEDS];
 CRGB pixels2[NUMLEDS];
@@ -83,7 +86,7 @@ bool front[NUMLEADS];       // is it in front
 
 float saturation[NUMLEADS];
 float hue[NUMLEADS];
-bool fadeUp[NUMLEADS];
+float brightness[NUMLEADS];
 bool exploding[NUMLEADS];
 float leadSize[NUMLEADS];
 
@@ -122,7 +125,12 @@ boolean stringComplete = false;  // whether the string is complete
 // PIR sensors
 bool movement = false;
 int PIRpin[] = {1,2,5,6};
+
+// Idle state
 bool idle = true;
+unsigned long lastActed = 0;  // The last time something happened
+unsigned long idleStart;      // When the idle state started
+unsigned long idleEnd;        // When the idle state ended
 
 
 //---------------------------start of setup---------------------------------
@@ -130,11 +138,18 @@ bool idle = true;
 void setup() {
   // Read EEPROM
   bright = EEPROM.read(brightAddress);
-  if(bright<0) bright = 0;           // Limit the brightness between 0 and 255
+  if(bright<20) bright = 20;           // Limit the brightness between 0 and 255
   if(bright>255) bright = 255;
+  // Set print bools from eeprom
+  printLDRs = EEPROM.read(printLDRAddr);
+  printTrigs = EEPROM.read(printTrigAddr);
+  printPixels = EEPROM.read(printPixelsAddr);
+  printMoves = EEPROM.read(printMovesAddr);
+  printStrips = EEPROM.read(printStripsAddr);
+
 
   // Start Serial
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // Setup pins
   for(int i=0; i<4; i++){      // PIR pins
@@ -150,11 +165,11 @@ void setup() {
 
 
   // start fast leds and make them fade to white
-  FastLED.addLeds<WS2812,PIXELPIN1,COLOR_ORDER>(pixels1, NUMLEDS);
-  FastLED.addLeds<WS2812,PIXELPIN2,COLOR_ORDER>(pixels2, NUMLEDS);
+  FastLED.addLeds<WS2812,PIXELPIN1,GRB>(pixels1, NUMLEDS);
+  FastLED.addLeds<WS2812,PIXELPIN2,GRB>(pixels2, NUMLEDS);
   for(int i=0; i<100; i++){
     float b = i*0.01*bright;
-    for(int j=0; j<NUMPIXELS; j++){
+    for(int j=0; j<NUMLEDS; j++){
       pixels1[j] = CHSV(0,0,b);
       pixels2[j] = CHSV(0,0,b);
     }
@@ -172,15 +187,8 @@ void setup() {
   }
 
   
-  
-  // Set all printing to false
-  printLDRs = false;
-  printPixels = false;
-  printTrigs = false;
-  printMoves = false;
-  printStrips = false;
 
-
+  FastLED.setBrightness(bright);
 
   Serial.println("Setup done, send 'i' for info");
 }
@@ -192,13 +200,167 @@ void setup() {
 
 void loop() {
   
-//  if(!movement) idlePulse();
-//  serialEvent();  // Handles incoming serial
+  LDRs();  // Check LDR values
+  leadPixels();  //update lead pixels
 
-  // Check for movement
-  checkMovement();
+
+  if(idle){
+    //check if it should still be idle
+    if(millis() < lastActed + IDLEDELAY){
+      idle = false;
+      idleEnd = millis();
+    }
+    idlePulse(); //pulse
+    // Check for movement
+    checkMovement();
+  }
+
+
+
+  // If it's not idle
+  else{
+    //check if it should be idle
+    if(millis() > lastActed + IDLEDELAY){
+      idle = true;
+      idleStart = millis();
+    }
+
+    
+    if(printPixels) Serial.println(" ");
+    
+    // reset pixel types
+    if(printStrips){
+      for(int i=0; i<NUMPIXELS; i++){
+        pixelType[i] = 0;
+      }
+    }
   
-  // Read the LDR values using the shift Register
+
+
+
+    // Reset Pixel Colour
+    for(int j=0; j<NUMLEDS; j++){
+      pixels1[j] = CHSV(0,0,0);
+      pixels2[j] = CHSV(0,0,0);
+    }
+    // apply colour to the lead pixels
+    for(int i=0; i<NUMLEADS; i++){ 
+      for(int j=-leadSize[i]/2; j<leadSize[i]/2; j++){
+        
+        int pos = leadPixelPos[i]+j;
+        applyColour(pos, hue[i], saturation[i], brightness[i]);
+        
+        // Apply pixel types for serial printing
+        // If in range
+        if (pos>=0 && pos<NUMPIXELS && alive[i]){
+          //Led:nothing + Lead:Not exploding
+          if(pixelType[pos]==0 && !exploding[i]) pixelType[pos] = 1;
+          //Led:nothing + Lead:Exploding
+          else if(pixelType[pos]==0 && exploding[i]) pixelType[pos] = 2;
+          //Led:Not Exploding + Lead:Exploding
+          else if(pixelType[pos]==1 && exploding[i]) pixelType[pos] = 3;
+          //Led:Exploding + Lead:Not Exploding
+          else if(pixelType[pos]==2 && !exploding[i]) pixelType[pos] = 3;
+        }
+      }
+    }
+
+    
+  
+  
+    if(printStrips){
+      for(int i=0; i<NUMPIXELS-4; i+=4){
+        if (pixelType[i] == 0) Serial.print("_");
+        else if (pixelType[i] == 1) Serial.print("-");
+        else if (pixelType[i] == 2) Serial.print("|");
+        else if (pixelType[i] == 3) Serial.print("+");
+      }
+      Serial.println(" ");
+    }
+  
+  }  // End of "else" (not idle)
+  FastLED.show(); // This sends the updated pixel color to the hardware.
+}
+
+
+
+
+
+
+
+//--------------------------------end of loop---------------------------------
+
+
+// Lead Pixels
+void leadPixels(){
+  for (int i=0; i<NUMLEADS; i++){     // cycle through lead pixels
+    
+    // -- TIMING --
+    if (alive[i]){
+      lifeTime[i] = millis() - lifeStart[i];    // update life time
+      
+      
+      if(!exploding[i]){                      // if the block is not exploding, pulse
+        int pulseTimer = int(millis()*0.1) % 255;
+        saturation[i] = map(quadwave8(pulseTimer),0,255,50,255);
+        if(brightness[i]<250){
+          brightness[i] +=5;
+        }
+        
+      }
+
+      else if (exploding[i]){   // if the block is exploding
+        if(leadSize[i] > 300){  
+          vel[i] = 0;            // limit size
+        }
+        leadSize[i] += vel[i]; // increase size
+      }
+
+      if(lifeTime[i] > 5000){           // if the block is old
+        brightness[i] -= 1;          // fade out
+        if(brightness[i] <= 0){  
+          alive[i] = false;             // kill it off when faded
+          initLead(random(0,NUMLDRS));  // initiate another block somewhere
+          Serial.println("Pixel Died");
+        }
+      }
+    }
+
+
+    // Update Velocities
+    //if the absolute velocity is slower than the absolute target, change quickly to the target
+    if(abs(vel[i])<abs(targetVel[i]) && targetVel[i]!=0){
+      vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.06);
+    }
+    //if the absolute velocity is faster than absolute target, change slowly to the target
+    //and set the target to 0 if it isn't already
+    else if (abs(vel[i])>=abs(targetVel[i])){
+      vel[i]=fade(vel[i],targetVel[i],vel[i]*0.05);
+      if(targetVel[i]!=0) targetVel[i]=0;
+    }
+    //limit the velocity
+    if(targetVel[i]>MAXVEL) targetVel[i]=MAXVEL;
+    else if(targetVel[i]<-MAXVEL) targetVel[i]=-MAXVEL;
+  
+
+    
+
+    if(printPixels){
+      Serial.print("leadPos ");
+      Serial.print(i);
+      Serial.print(":");
+      Serial.print(leadPixelPos[i]);
+      if(exploding[i]) Serial.print(" Exploded!");
+      Serial.print(" | ");
+    }
+  }
+  if(printPixels) Serial.println(" ");
+}
+
+// Read LDRs
+void LDRs() {
+  
+// Read the LDR values using the shift Register
   shiftReg();  //function after loop
   heldSince ++;  //increase the "heldSince" value
   
@@ -206,9 +368,6 @@ void loop() {
     heldSince = 0;
   }
   
-
-
-
 
   for(int i=0; i<NUMLDRS; i++){   //cycle through LDRs
     // change the min and max values
@@ -242,150 +401,7 @@ void loop() {
     }
   }
   if(printLDRs) Serial.println(" ");
-
-
-
-  
-  for (int i=0; i<NUMLEADS; i++){     // cycle through lead pixels
-    
-    // -- TIMING --
-    if (alive[i]){
-      lifeTime[i] = millis() - lifeStart[i];    // update life time
-      
-      if(!exploding[i]){                      // if the block is not exploding, pulse
-        if(fadeUp[i]){                                // if it should fade up...
-          saturation[i] += FADESPEED;                 // fade up
-          if (saturation[i] >= 1) fadeUp[i] = false;  // if it reaches the top, start fading down
-        }
-        else{                                         // if it should fade down...
-          saturation[i] -= FADESPEED;                 // fade down
-          if (saturation[i] <= 0) fadeUp[i] = true;   // if it reaches the bottom, start fading up
-        }
-      }
-
-      else if (exploding[i]){   // if the block is exploding
-        if(leadSize[i] > 300){  
-          vel[i] = 0;            // limit size
-        }
-        leadSize[i] += vel[i]; // increase size
-      }
-
-      if(lifeTime[i] > 5000){           // if the block is old
-        saturation[i] -= 0.01;          // fade out
-        if(saturation <= 0){  
-          alive[i] = false;             // kill it off when faded
-          initLead(random(0,NUMLDRS));  // initiate another block somewhere
-          Serial.println("Pixel Died");
-        }
-      }
-    }
-
-
-    // Update Velocities
-    //if the absolute velocity is slower than the absolute target, change quickly to the target
-    if(abs(vel[i])<abs(targetVel[i]) && targetVel[i]!=0){
-      vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.06);
-    }
-    //if the absolute velocity is faster than absolute target, change slowly to the target
-    //and set the target to 0 if it isn't already
-    else if (abs(vel[i])>=abs(targetVel[i])){
-      vel[i]=fade(vel[i],targetVel[i],vel[i]*0.05);
-      if(targetVel[i]!=0) targetVel[i]=0;
-    }
-    //limit the velocity
-    if(targetVel[i]>MAXVEL) targetVel[i]=MAXVEL;
-    else if(targetVel[i]<-MAXVEL) targetVel[i]=-MAXVEL;
-
-
-    
-
-    if(printPixels){
-      Serial.print("leadPos ");
-      Serial.print(i);
-      Serial.print(":");
-      Serial.print(leadPixelPos[i]);
-      if(exploding[i]) Serial.print(" Exploded!");
-      Serial.print(" | ");
-    }
-
-
-  }
-  if(printPixels) Serial.println(" ");
-  
-
-
-  // Set Blueish White background
-  for(int i=0; i<NUMPIXELS; i++){
-    applyColour(i,0,0,-5);
-    pixelType[i] = 0;
-  }
-
-  
-  // apply colour to the exploded lead pixels not in front
-  for(int i=0; i<NUMLEADS; i++){
-    if(exploding[i] && !front[i]){
-
-      for(int j=-leadSize[i]/2; j<leadSize[i]/2; j++){
-        
-        int pos = leadPixelPos[i]+j;
-        applyColour(pos, hue[i], saturation[i], bright);
-        if (pos>=0 && pos<NUMPIXELS && alive[i]) pixelType[pos] = 1;
-      }
-    }
-  }
-
-  // apply colour to the Lead pixels in front
-  for(int i=0; i<NUMLEADS; i++){
-    if(exploding[i] && front[i]){
-//      H2R_HSBtoRGBfloat(hue[i], saturation[i], bright, pColour[i]);
-      for(int j=-leadSize[i]/2; j<leadSize[i]/2; j++){
-        int pos = leadPixelPos[i]+j;
-        applyColour(pos, hue[i], saturation[i], bright);
-//        applyColour(leadPixelPos[i]+j, pColour[i][0], pColour[i][1], pColour[i][2]);
-        if (pos>=0 && pos<NUMPIXELS && alive[i]) pixelType[pos] = 1;
-      }
-    }
-  }
-
-  // apply colour to the Lead pixels that have not exploded
-  for(int i=0; i<NUMLEADS; i++){
-    if(!exploding[i]){
-//      H2R_HSBtoRGBfloat(hue[i], saturation[i], bright, pColour[i]);
-      for(int j=-leadSize[i]/2; j<leadSize[i]/2; j++){
-        
-//        applyColour(leadPixelPos[i]+j, pColour[i][0], pColour[i][1], pColour[i][2]);
-        int pos = leadPixelPos[i]+j;
-        applyColour(pos, hue[i], saturation[i], bright);
-        if (pos>=0 && pos<NUMPIXELS && alive[i]) pixelType[pos] = 2;
-      }
-    }
-  }
-  
-  
-  FastLED.show(); // This sends the updated pixel color to the hardware.
-
-
-  if(printStrips){
-    for(int i=0; i<NUMPIXELS-4; i+=4){
-      if (pixelType[i] == 0) Serial.print("-");
-      else if (pixelType[i] == 1) Serial.print("|");
-      else if (pixelType[i] == 2) Serial.print("+");
-    }
-    Serial.println(" ");
-  }
-  
-
 }
-
-
-
-
-
-
-
-//--------------------------------end of loop---------------------------------
-
-
 
 // initiate a lead pixel
 void initLead(int pos){
@@ -402,9 +418,9 @@ void initLead(int pos){
   leadPixelPos[index] = LEDSpawnNum[pos];  // put in correct place
   alive[index] = true;                     // make alive
   lifeStart[index] = millis();             // give lifeStart time
-  hue[index] = random(0,100)*0.01;         // a random colour
+  hue[index] = random(0,255);              // a random colour
   saturation[index] = 0;                   // start with no saturation (to fade in)
-  fadeUp[index] = true;                    // start lead pixel fading up
+  brightness[index] = 0;                   // start with no brightness (to fade in)
   leadSize[index] = INITLEADSIZE;          // the initial size of the lead pixel
   exploding[index] = false;                // make sure it's not exploding to start with
   front[index] = false;                    // It's already in front of the exploeded ones
@@ -417,6 +433,7 @@ void trig(int LDR) {
 
   unsigned long t = millis();
   trigTime[LDR] = t;  // set the initial trigger time
+  lastActed = t;
   
   if(printTrigs){
     Serial.print("Triggered LDR#");
@@ -438,7 +455,7 @@ void trig(int LDR) {
     if(lifeTime[target] > 500){       // only if it's old enough
       targetVel[target] = MAXVEL;     // change the target velocity
       exploding[target] = true;       // make explode
-      saturation[target] = 1.0;       // Full saturation
+      saturation[target] = 255;       // Full saturation
       lifeStart[target] = millis();   // Restart life clock
       putInFront(target);             // put it in front
       if(printTrigs){
@@ -496,14 +513,12 @@ void applyColour(float pixelin, float h, float s, float v){
   if(pixel%2 == 0){
     int p = pixel/2;
     pixels1[p] += CHSV(h,s,v);
-//    pixels1.setPixelColor(p, pixels1.Color(redOut,greenOut,blueOut));
   }
   
   // strip2 
   if(pixel%2 == 1){
     int p = (pixel-1)/2;
     pixels1[p] += CHSV(h,s,v);
-//    pixels2.setPixelColor(p, pixels2.Color(redOut,greenOut,blueOut));
   }
 }
 
@@ -526,6 +541,7 @@ void checkMovement(){
   }
   if(newMovement != movement){
     movement = newMovement;  
+    lastActed = millis();
     if(printMoves){
       Serial.print("movement: ");
       for(int i=0; i<4; i++){
@@ -556,7 +572,22 @@ int leadPixelAt(int LDR){
   return selectedPixel;
 }
 
+//--------------------------------------------------------------------------
 
+
+
+
+// Idle pulse
+void idlePulse(){
+  unsigned long pulseTime = millis()-idleStart;
+  int pulseTimer = int(pulseTime*0.05) % 255;
+  int brightness = map(quadwave8(pulseTimer),0,255,50,255);
+  for(int i=0; i<NUMLEDS; i++){
+    pixels1[i] = CHSV(0,0,brightness);
+    pixels2[i] = CHSV(0,0,brightness);
+  }
+  FastLED.show();
+}
 
 
 //--------------------------------------------------------------------------
@@ -636,6 +667,8 @@ void serialEvent() {
 
     // Get info by sending "i"
     if(inputString.startsWith("i")){  
+      Serial.print("lastActed: ");
+      Serial.println(lastActed);
       Serial.print("printPixels(p): ");
       Serial.println(printLDRs);
       Serial.print("printLDRs(l): ");
@@ -655,6 +688,8 @@ void serialEvent() {
     // Control printing pixel values with "p"
     else if(inputString.startsWith("p")){
       printPixels=!printPixels;
+      byte eepromIn = printPixels;
+      EEPROM.write(printPixelsAddr, eepromIn);
       Serial.print("printPixels(p): ");
       Serial.println(printPixels);
     }
@@ -662,6 +697,8 @@ void serialEvent() {
     // Control printing LDR values with "l"
     else if(inputString.startsWith("l")){
       printLDRs=!printLDRs;
+      byte eepromIn = printLDRs;
+      EEPROM.write(printLDRAddr, eepromIn);
       Serial.print("printLDRs(l): ");
       Serial.println(printLDRs);
     }
@@ -669,22 +706,30 @@ void serialEvent() {
     // Control printing trigger values with "t"
     else if(inputString.startsWith("t")){
       printTrigs=!printTrigs;
+      byte eepromIn = printTrigs;
+      EEPROM.write(printTrigAddr, eepromIn);
       Serial.print("printTrigs(t): ");
       Serial.println(printTrigs);
     }
     
     // Control printing movement with "m"
     else if(inputString.startsWith("m")){
-      if(printMoves) printMoves=0;
-      else printMoves = 1;
+//      if(printMoves) printMoves=0;
+//      else printMoves = 1;
+      printMoves=!printMoves;
+      byte eepromIn = printMoves;
+      EEPROM.write(printMovesAddr, eepromIn);
       Serial.print("printMoves(m): ");
       Serial.println(printMoves);
     }
 
     // Control printing strips with "m"
     else if(inputString.startsWith("s")){
-      if(printStrips) printStrips=0;
-      else printStrips = 1;
+//      if(printStrips) printStrips=0;
+//      else printStrips = 1;
+      printStrips=!printStrips;
+      byte eepromIn = printStrips;
+      EEPROM.write(printStripsAddr, eepromIn);
       Serial.print("printStrips(s): ");
       Serial.println(printStrips);
     }
@@ -696,8 +741,9 @@ void serialEvent() {
       if(bright<0) bright = 0;           // Limit the brightness between 0 and 255
       if(bright>255) bright = 255;
       FastLED.setBrightness(bright);
-      
-      EEPROM.write(brightAddress, byte(bright));  // Save the brightness to eeprom
+
+      byte eepromIn = bright;
+      EEPROM.write(brightAddress, bright);  // Save the brightness to eeprom
       Serial.print("bright(b...): ");
       Serial.println(bright);
     }
