@@ -25,7 +25,7 @@
 #define PIXELPIN2      4
 #define NUMLEDS        300   //Number of LEDs per strip
 #define NUMPIXELS      600   //Total number of LEDs (both strips)
-#define NUMBLOCKS       8    //number of lead pixels
+#define NUMBLOCKS       8    //number of blocks
 #define MAXVEL         30
 #define FADESPEED      0.14
 #define INITBLOCKSIZE   25
@@ -204,7 +204,7 @@ void setup() {
 void loop() {
   
   LDRs();  // Check LDR values
-  blocks();  //update lead pixels
+  blocks();  //update blocks
 
 
   if(idle){
@@ -292,7 +292,7 @@ void loop() {
 //--------------------------------end of loop---------------------------------
 
 
-// Lead Pixels
+// blocks
 void blocks(){
   for (int i=0; i<NUMBLOCKS; i++){     // cycle through blocks
     
@@ -404,9 +404,9 @@ void LDRs() {
   if(printLDRs) Serial.println(" ");
 }
 
-// initiate a lead pixel
+// initiate a block
 void initBlock(int pos){
-  // Look through array of lead pixels for any that are dead
+  // Look through array of blocks for any that are dead
   int index = 0;
   while(alive[index]){  // Only look until a dead one is found
     index++;
@@ -422,7 +422,7 @@ void initBlock(int pos){
   hue[index] = random(0,255);              // a random colour
   saturation[index] = 0;                   // start with no saturation (to fade in)
   brightness[index] = 0;                   // start with no brightness (to fade in)
-  blockSize[index] = INITBLOCKSIZE;          // the initial size of the lead pixel
+  blockSize[index] = INITBLOCKSIZE;          // the initial size of the block
   exploding[index] = false;                // make sure it's not exploding to start with
   front[index] = false;                    // It's already in front of the exploeded ones
 
@@ -441,16 +441,16 @@ void trig(int LDR) {
     Serial.print(LDR);
   }
 
-  if(blockAt(LDR) < 0){    // If there's no lead pixel at the LDR
-    initBlock(LDR);             // make a new lead pixel
+  if(blockAt(LDR) < 0){    // If there's no block at the LDR
+    initBlock(LDR);             // make a new block
     if(printTrigs){
       Serial.print(" | made block at ");
       Serial.print(LDR);
     }
   }
   
-  else{       // if there is a lead pixel at the LDR
-    int target = blockAt(LDR);    // select the lead pixel
+  else{       // if there is a block at the LDR
+    int target = blockAt(LDR);    // select the block
 
     // Explode it
     if(lifeTime[target] > 500){       // only if it's old enough
