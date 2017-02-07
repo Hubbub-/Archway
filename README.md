@@ -3,6 +3,7 @@
 ### (Reuben Poharama, Braeden Foster and Martin Hill)
 
 Arco was originally created for NZ Sculpture on Shore 2016.
+Revised for Splore Festival 2017.
 
 Basically, the code does the following...  
 
@@ -16,8 +17,9 @@ Basically, the code does the following...
 - "l": Print LDRs (prints readings from LDRs every frame)
 - "t": Print Trigs (prints trigger information any time trigger happens)
 - "m": Print Moves (prints whenever PIRs sense movement)
+- "s": Print Strips (prints visual of what the LED strips are showing)
 - "bxxx": Brightness (change brightness to xxx {where xxx = 0-255})
 - "fxxx": Force trigger (cause LDR number xxx to trigger)
 
 
-Makes use of the Adafruit NeoPixel library and the HSBColor Library
+Makes use of the FastLED library and the EEPROM Library
