@@ -60,6 +60,7 @@ int blockType[NUMPIXELS]; // 0:Nothing 1:Exploded 2:Not Exploded
 
 CRGB pixels1[NUMLEDS];
 CRGB pixels2[NUMLEDS];
+byte numBlends[NUMPIXELS];
 
 //initial block colours
 int pColour[NUMBLOCKS][3] = {
@@ -77,7 +78,7 @@ int pColour[NUMBLOCKS][3] = {
 float LDR[NUMLDRS];
 float prevLDR[NUMLDRS];
 float heldVal[NUMLDRS];
-unsigned int heldSince;
+unsigned long heldSince;
 float blockPos[NUMBLOCKS];
 int lifeTime [NUMBLOCKS];   // how long it's been alive
 unsigned long lifeStart [NUMBLOCKS];  // time that the life started
@@ -209,7 +210,10 @@ void setup() {
 //---------------------------start of loop---------------------------------
 
 void loop() {
-  
+  // reset blends
+  for(int i=0; i<NUMPIXELS; i++){
+    numBlends[i] = 0;
+  }
   LDRs();  // Check LDR values
   blocks();  //update blocks
 
@@ -412,8 +416,9 @@ void LDRs() {
     int difference = abs(maxBright[i]-minBright[i]);
     int middle = minBright[i]+difference/2;
     
-    if (heldSince == 0) {                   // if "heldsince" is greater than 
-      if (abs(heldVal[i]-LDR[i]) > middle*0.12+10) {  // if there's a change in reading and the pixel isn't alive
+    if (heldSince == 0) {                   // if "heldsince" is 0 (only happens every 5 loops)
+      // if there's a significant change in reading and it hasn't just gone to idle
+      if (abs(heldVal[i]-LDR[i]) > middle*0.12+10 && millis() < idleStart+1000) {  
         trig(i);                  // trigger the pixel spawn/explode
       }
 
@@ -484,6 +489,9 @@ void trig(int LDR) {
       Serial.print(" | made block at ");
       Serial.print(LDR);
     }
+    int target = blockAt(LDR);    // select the block
+    // Explode it
+    explode(target);
   }
   
   else{       // if there is a block at the LDR
@@ -491,20 +499,7 @@ void trig(int LDR) {
 
     // Explode it
     if(lifeTime[target] > 500){       // only if it's old enough
-      targetVel[target] = MAXVEL;     // change the target velocity
-      exploding[target] = true;       // make explode
-      saturation[target] = 255;       // Full saturation
-      brightness[target] = 255;
-      lifeStart[target] = millis();   // Restart life clock
-      putInFront(target);             // put it in front
-      if(printTrigs){
-        Serial.print(" | targetVel of[");
-        Serial.print(target);
-        Serial.print("] now ");
-        Serial.print(targetVel[target]);
-        Serial.print(" front=");
-        Serial.print(front[target]);
-      }
+      explode(target);
     }
   }
 
@@ -518,8 +513,22 @@ void trig(int LDR) {
 
 //------------------------------------------------------------------------
 
-
-
+void explode(int target){
+  targetVel[target] = MAXVEL;     // change the target velocity
+  exploding[target] = true;       // make explode
+  saturation[target] = 255;       // Full saturation
+  brightness[target] = 255;
+  lifeStart[target] = millis();   // Restart life clock
+  putInFront(target);             // put it in front
+  if(printTrigs){
+    Serial.print(" | targetVel of[");
+    Serial.print(target);
+    Serial.print("] now ");
+    Serial.print(targetVel[target]);
+    Serial.print(" front=");
+    Serial.print(front[target]);
+  }
+}
 
 
 // LDR Shift Register stuff
@@ -563,17 +572,20 @@ void applyColour(float pixelin, float h, float s, float v){
 
 void mixColour(float pixelin, float h, float s, float v){
   int pixel = (int) pixelin;
+  numBlends[pixel] ++;            // increase number of blends
+  float blendAmount = 255/(1+numBlends[pixel]);  // how much to blend with existing
   
   // strip1
   if(pixel%2 == 0){
     int p = pixel/2;
-    pixels1[p] += CHSV(h,s,v);
+    pixels1[p] = nblend(pixels1[p],CHSV(h,s,v),blendAmount);
   }
   
   // strip2 
   if(pixel%2 == 1){
     int p = (pixel-1)/2;
-    pixels2[p] += CHSV(h,s,v);
+    pixels2[p] = nblend(pixels2[p],CHSV(h,s,v),blendAmount);
+//    pixels2[p] += CHSV(h,s,v);
   }
 }
 
