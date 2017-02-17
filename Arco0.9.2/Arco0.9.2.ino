@@ -133,7 +133,7 @@ bool PIRbool[4];
 // Idle state
 bool idle = false;
 bool forceIdle = false;
-byte idleHue = 170;
+float idleHue = 170;
 unsigned long lastActed = 0;  // The last time something happened
 unsigned long idleStart;      // When the idle state started
 unsigned long idleEnd;        // When the idle state ended
@@ -194,7 +194,10 @@ void setup() {
     pulseSpeed[i] = random(80,130)/1000.00;
   }
   
-
+  for (int i=0; i<5; i++){
+    trig(random(13));
+  }
+  
   FastLED.setBrightness(bright);
 
   Serial.println("Setup done, send 'i' for info");
@@ -217,7 +220,7 @@ void loop() {
 
   if(idle){
     //check if it should still be idle
-    if(millis() < lastActed + IDLEDELAY && !forceIdle){
+    if(millis() < lastActed + 100 && !forceIdle){
       idle = false;
       idleEnd = millis();
     }
@@ -364,9 +367,12 @@ void idlePulse(){
   unsigned long pulseTime = millis()-idleStart;
   int pulseTimer = int(pulseTime*0.08) % 255;
   int brightness = map(quadwave8(pulseTimer),0,255,150,255);
+  idleHue += 0.05;
+  if(idleHue >= 255) idleHue = 0;
+  int ih = int(idleHue);
   for(int i=0; i<NUMLEDS; i++){
-    pixels1[i] = CHSV(idleHue,brightness,brightness);
-    pixels2[i] = CHSV(idleHue,brightness,brightness);
+    pixels1[i] = CHSV(ih,brightness,brightness);
+    pixels2[i] = CHSV(ih,brightness,brightness);
   }
   FastLED.show();
 }
