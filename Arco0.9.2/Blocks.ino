@@ -26,9 +26,9 @@ void blocksUpdate(){
         blockSize[i] += vel[i]; // increase size
       }
 
-      if(lifeTime[i] > 5000 && exploding[i]){                // if the block is old
+      if(lifeTime[i] > 3000 && exploding[i]){                // if the block is old
         if(brightness[i] > WHITEBRIGHT) brightness[i] -= 1;  // fade brightness
-        saturation[i] -= 2;                                  // fade saturation
+        saturation[i] -= 3;                                  // fade saturation
         if(saturation[i] <= 0){  
           alive[i] = false;             // kill it off when faded
           initBlock(random(0,NUMLDRS));  // initiate another block somewhere
