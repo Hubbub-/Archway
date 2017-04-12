@@ -19,11 +19,16 @@ void serialEvent() {
     Serial.print("String in: ");
     Serial.println(inputString);
 
-    String blockString = inputString.substring(1,2);   // Get number following letter (2nd character)
-    String commandString = inputString.substring(2,3); // Get character following strip number
-    String numberString = inputString.substring(3,8);  // Get number following cammand letter
+    // For controlling blocks
+    String blockString = inputString.substring(1,2);   // Get block number (2nd character)
+    String commandString = inputString.substring(2,3); // Get block command character
+    String numberString = inputString.substring(3,8);  // Get block command value
     int blockIn = blockString.toInt();
     int numberIn = numberString.toInt();        // Convert number string to int
+
+    // For imitating midi commands
+    String noteString = inputString.substring(1);  // Get midi Note
+    int noteIn = noteString.toInt();
 
     // Get info by sending "i"
     if(inputString.startsWith("i")){  
@@ -32,9 +37,12 @@ void serialEvent() {
       Serial.println(printBlocks);
       Serial.print("printStrips(ps): ");
       Serial.println(printStrips);
+      Serial.print("printStrips(pm): ");
+      Serial.println(printMidi);
       Serial.println("block commands(b-block#-variable-value)");
       Serial.println("eg. b0h170");
-      Serial.print("midi commands(m): ");
+      Serial.println("midi commands(m)");
+      Serial.println("slider control(s)");
     }
     
 
@@ -43,7 +51,7 @@ void serialEvent() {
       printBlocks=!printBlocks;
       byte eepromIn = printBlocks;
       EEPROM.write(printBlocksAddr, eepromIn);
-      Serial.print("printBlocks(p): ");
+      Serial.print("printBlocks(pb): ");
       Serial.println(printBlocks);
     }
 
@@ -52,10 +60,20 @@ void serialEvent() {
       printStrips=!printStrips;
       byte eepromIn = printStrips;
       EEPROM.write(printStripsAddr, eepromIn);
-      Serial.print("printStrips(s): ");
+      Serial.print("printStrips(ps): ");
       Serial.println(printStrips);
     }
 
+    // Control printing strips with "pm"
+    else if(inputString.startsWith("pm")){
+      printMidi=!printMidi;
+      byte eepromIn = printMidi;
+      EEPROM.write(printMidiAddr, eepromIn);
+      Serial.print("printMidi(pm): ");
+      Serial.println(printMidi);
+    }
+
+    // Block commands
     else if(inputString.startsWith("b")){   // incoming block command
       if(commandString == "w") blockWidth[blockIn] = numberIn;   // change size of block
       if(commandString == "p") blockPos[blockIn] = numberIn;   // change position of block
@@ -65,7 +83,11 @@ void serialEvent() {
     }
 
     else if(inputString.startsWith("m")){
-      midiTrig(blockIn);
+      midiTrig(noteIn);
+    }
+
+    else if(inputString.startsWith("s")){
+      slideControl(noteIn);
     }
 
     else if(inputString.startsWith("q")){

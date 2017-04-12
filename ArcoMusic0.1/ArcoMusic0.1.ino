@@ -26,9 +26,12 @@
 #define NUMBLOCKS       2    //number of blocks
 
 
+#define BPM   106
+
 
 // Define eeprom addresses
 #define printBlocksAddr 16
+#define printMidiAddr   18
 #define printStripsAddr 20
 
 bool pixelUsed[NUMPIXELS];
@@ -55,10 +58,21 @@ float blockWidth[NUMBLOCKS];
 float vel[NUMBLOCKS];
 float targetVel[NUMBLOCKS];
 
+//strobe
+bool strobing[NUMBLOCKS];
+float strobeSpeed[NUMBLOCKS];
+unsigned long lastStrobe[NUMBLOCKS];
+
+//block control
+byte selected = 0;
+byte controlling = 0; // 0:hue 1:saturation 2:velocity 3: size
+
 
 //whether or not to print information
 bool printBlocks;
 bool printStrips;
+bool printMidi;
+
 byte bright;  //how bright the FastLEDs are
 
 String inputString = "";         // a string to hold incoming data
@@ -74,22 +88,22 @@ void setup() {
   // Set print bools from eeprom
   printBlocks = EEPROM.read(printBlocksAddr);
   printStrips = EEPROM.read(printStripsAddr);
+  printMidi = EEPROM.read(printMidiAddr);
 
 
   // Start Serial
   Serial.begin(115200);
 
   usbMIDI.setHandleNoteOn(OnNoteOn);
-
   usbMIDI.setHandleControlChange(OnControlChange);
 
 
 
-  // start fast leds and make them fade to white
+  // start fast leds
   FastLED.addLeds<WS2812,PIXELPIN1,GRB>(pixels1, NUMLEDS);
   FastLED.addLeds<WS2812,PIXELPIN2,GRB>(pixels2, NUMLEDS);
 
-
+  // initiate 2 blocks
   initBlock(0);
   initBlock(1);
 

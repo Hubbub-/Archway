@@ -9,6 +9,10 @@ void blocksUpdate(){
     
 
     // Update Velocities
+    // limit targetVel
+    if(abs(targetVel[i])<5) targetVel[i]=0;  // make targetvel 0 if it's really small
+
+    
     //if the absolute velocity is slower than the absolute target, change quickly to the target
     if(abs(vel[i])<abs(targetVel[i]) && targetVel[i]!=0){
       vel[i]=fade(vel[i],targetVel[i],targetVel[i]*0.06);
@@ -61,19 +65,30 @@ void blocksRender(){
   }
   // apply colour to the blocks
   for(int i=0; i<NUMBLOCKS; i++){
-   
-    for(int j=-blockWidth[i]/2; j<blockWidth[i]/2; j++){
+    //strobe
+    //1 minute/BPM = beat length (I used 2 minutes so we could do half time)
+    float strobePer = 120000/BPM/strobeSpeed[i];           // convert frequency (strobes per beat) to period
+    if(millis() >= lastStrobe[i] + strobePer){             // if at the end of strobe sequence
+      lastStrobe[i]=millis();                                // reset lastStrobe
+    }
+    if(strobing[i] && millis() < lastStrobe[i] + strobePer/2){  // if blackout part of strobe
       
-      int pos = blockPos[i]+j;
-      if(pos > NUMPIXELS) pos -= NUMPIXELS;
-      if(pos < 0) pos += NUMPIXELS;
-      if(pos>0 && pos<NUMPIXELS){
-        mixColour(pos, hue[i], saturation[i], brightness[i]);
-      }
-      // Apply pixel types for serial printing
-      // If in range
-      if (pos>=0 && pos<NUMPIXELS){
-        pixelUsed[pos] = true;
+    }
+    
+    else {    // If not in blackout part of strobe
+      for(int j=-blockWidth[i]/2; j<blockWidth[i]/2; j++){
+        
+        int pos = blockPos[i]+j;
+        if(pos > NUMPIXELS) pos -= NUMPIXELS;
+        if(pos < 0) pos += NUMPIXELS;
+        if(pos>0 && pos<NUMPIXELS){
+          mixColour(pos, hue[i], saturation[i], brightness[i]);
+        }
+        // Apply pixel types for serial printing
+        // If in range
+        if (pos>=0 && pos<NUMPIXELS){
+          pixelUsed[pos] = true;
+        }
       }
     }
   }  
