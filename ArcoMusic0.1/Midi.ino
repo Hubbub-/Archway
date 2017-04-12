@@ -39,7 +39,7 @@ void midiTrig(int in){
   if(in < 36 || in > 43){
     Serial.print("controlling block ");
     Serial.print(selected);
-    Serial.println(" ");
+    Serial.print(" ");
   }
 
   
@@ -97,6 +97,7 @@ void midiTrig(int in){
     preset(0,4);
     preset(1,4);
   }
+  Serial.println(" ");
 }
 
 void slideControl(int val){
@@ -112,7 +113,7 @@ void slideControl(int val){
   else if(controlling==3){    // width
     blockWidth[selected] = map(val,0,127,0,NUMPIXELS/2);
   }
-  else if(controlling==4){    // width
+  else if(controlling==4){    // strobe speed
     strobeSpeed[selected] = pow(2,map(val,0,127,0,4));
   }
 }
