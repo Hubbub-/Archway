@@ -32,7 +32,9 @@ void midiTrig(int in){
     
   }
   else if(in == 6){  // bottom side button resets timing
-    
+    for(int i=0; i<NUMBLOCKS; i++){
+      strobeStart[i] = millis();
+    }
   }
 
   // print information on what's selected

@@ -82,7 +82,7 @@ float targetVel[NUMBLOCKS];
 //strobe
 bool strobing[NUMBLOCKS];
 float strobeSpeed[NUMBLOCKS];
-unsigned long lastStrobe[NUMBLOCKS];
+unsigned long strobeStart[NUMBLOCKS];
 
 //block control
 byte selected = 0;

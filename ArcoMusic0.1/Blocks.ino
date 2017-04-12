@@ -66,12 +66,17 @@ void blocksRender(){
   // apply colour to the blocks
   for(int i=0; i<NUMBLOCKS; i++){
     //strobe
-    //1 minute/BPM = beat length (I used 2 minutes so we could do half time)
-    float strobePer = 120000/BPM/strobeSpeed[i];           // convert frequency (strobes per beat) to period
-    if(millis() >= lastStrobe[i] + strobePer){             // if at the end of strobe sequence
-      lastStrobe[i]=millis();                                // reset lastStrobe
-    }
-    if(strobing[i] && millis() < lastStrobe[i] + strobePer/2){  // if blackout part of strobe
+    // 1 minute/BPM = beat length (I used 2 minutes so we could do half time)
+    int strobePer = 120000/BPM/strobeSpeed[i];           // convert frequency (strobes per beat) to period
+
+//    if(millis() >= lastStrobe[i] + strobePer){             // if at the end of strobe sequence
+//      lastStrobe[i]=millis();                                // reset lastStrobe
+//    }
+//    if(strobing[i] && millis() < lastStrobe[i] + strobePer/2){  // if blackout part of strobe
+//      
+//    }
+    // if blackout part of strobe   
+    if((millis()-strobeStart[i]) % strobePer > strobePer/2 && strobing[i]){
       
     }
     
