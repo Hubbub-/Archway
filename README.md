@@ -6,6 +6,7 @@
 
 Arco was originally created for NZ Sculpture on Shore 2016.
 Revised for Splore Festival 2017.
+Revised for Music Video.
 
 Find out more about Arco [here](http://hubbub.nz/arco.html)
 
@@ -27,4 +28,35 @@ Basically, the code does the following...
 - "fxxx": Force trigger (cause LDR number xxx to trigger)
 
 
+
+The music video code allowed for the performer to change the behaviour of Arco by using a midi device. Midi signals selected which block and property to change as well as presets.
+
+  Button mapping:
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  |Block1|   |Strobe Speed |  |             |  |             |  |             |
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  |Block2|   |             |  |             |  |             |  |             |
+  +------+   |  Preset 5   |  |  Preset 6   |  |  Preset 7   |  |  Preset 8   |
+             |             |  |             |  |             |  |             |
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  |      |
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+             |             |  |             |  |             |  |             |
+  +------+   |  Preset 1   |  |  Preset 2   |  |  Preset 3   |  |  Preset 4   |
+  |      |   |             |  |             |  |             |  |             |
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+  |Reset |   |     Hue     |  | Saturation  |  |  Velocity   |  |    Width    |
+  +------+   +-------------+  +-------------+  +-------------+  +-------------+
+
+
 Makes use of the FastLED library and the EEPROM Library
+
+Equipment list:
+- Arduino teensy
+- Shift Register x2
+- Optocoupler (for using multiple power supplies with LED strips)
+- 5m waterproof LED strips x4
