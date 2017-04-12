@@ -31,6 +31,7 @@ Basically, the code does the following...
 
 The music video code allowed for the performer to change the behaviour of Arco by using a midi device. Midi signals selected which block and property to change as well as presets.
 
+![Arco Midi Map image](https://github.com/Hubbub-/Arco/raw/master/ArcoMidiMap.JPG “Midi Map“)
 
 Makes use of the FastLED library and the EEPROM Library
 
