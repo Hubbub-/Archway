@@ -117,6 +117,7 @@ bool spinning[NUMBLOCKS];
 float spinSpeed[NUMBLOCKS];
 float initPos[NUMBLOCKS];
 bool reverse[NUMBLOCKS];
+bool downOnly[NUMBLOCKS];
 
 
 //block control

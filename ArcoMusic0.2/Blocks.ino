@@ -3,16 +3,22 @@
 void blocksUpdate(){
   for (int i=0; i<NUMBLOCKS; i++){     // cycle through blocks
     blockPos[i] += vel[i];
-    if(blockPos[i] > NUMPIXELS) blockPos[i] = 0;
-    if(blockPos[i] < 0) blockPos[i] = NUMPIXELS;
+    if(blockPos[i] > NUMPIXELS){
+      blockPos[i] = 0;
+    }
+    if(blockPos[i] < 0){
+      blockPos[i] = NUMPIXELS;
+    }
 
     int spinPer = 240000/BPM/spinSpeed[i];           // convert frequency (strobes per beat) to period
     if(spinning[i]){
       if(reverse[i]){
         blockPos[i] = initPos[i] - mapFloat((millis()-beatStart) % spinPer, 0, spinPer, 0, NUMPIXELS);
+        if(downOnly[i] && blockPos[i] < 0) blockPos[i] += NUMPIXELS/2;
       }
       else{
         blockPos[i] = initPos[i] + mapFloat((millis()-beatStart) % spinPer, 0, spinPer, 0, NUMPIXELS);
+        if(downOnly[i] && blockPos[i] > NUMPIXELS) blockPos[i] -= NUMPIXELS/2;
       }
     }
 

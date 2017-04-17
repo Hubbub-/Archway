@@ -41,6 +41,7 @@ void preset(int value){
     spinning[i] = false;
     spinSpeed[i] = 1;
     reverse[i] = false;
+    downOnly[i] = false;
   }
   if(value == 1){             // half blue, half red
     blockWidth[0] = NUMPIXELS/2;
@@ -458,41 +459,88 @@ void preset(int value){
     }
   }
 
-//  else if(value == 23){            // white half, switching, with red strobe in darkness
-//    saturation[0] = whiteSat;
-//    brightness[1] = 0; 
-//    switchSpeed = 2;
-//    for(int b=0; b<2; b++){
-//      blockWidth[b] = NUMPIXELS/2;
-//      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
-//      switching[b] = true;
-//    }
-//    for(int b=2; b<4; b++){
-//      blockWidth[b] = NUMPIXELS/8;
-//      strobeSpeed[b] = 4;
-//      hue[b] = redHue;
-//      strobeType[b] = 10;
-//    }
-//    blockPos[2] = NUMPIXELS*0.25;
-//    blockPos[3] = NUMPIXELS*0.75;
-//  }
+  else if(value == 28){            // two red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/16;
+      blockPos[b] = NUMPIXELS/2;
+      hue[b] = redHue;
+      spinning[b] = true;
+      initPos[b] = blockPos[b];
+    }
+  }
 
+  else if(value == 29){            // white and red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    hue[0] = redHue;
+    saturation[1] = whiteSat;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/16;
+      blockPos[b] = NUMPIXELS/2;
+      spinning[b] = true;
+      initPos[b] = blockPos[b];
+    }
+  }
 
+  else if(value == 30){            // white and red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/16;
+      blockPos[b] = NUMPIXELS/2;
+      spinning[b] = true;
+      saturation[b] = whiteSat;
+      initPos[b] = blockPos[b];
+      downOnly[b] = true;
+    }
+  }
 
+  else if(value == 31){            // white and red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/8;
+      blockPos[b] = NUMPIXELS/2;
+      spinning[b] = true;
+      saturation[b] = whiteSat;
+      initPos[b] = blockPos[b];
+      downOnly[b] = true;
+    }
+  }
 
-//  else if(value == 19){            // 7 white segments, strobing interchanging
-//    for(int b=0; b<3; b++){
-//      blockWidth[b] = NUMPIXELS/16;
-//      blockPos[b] = ((b*2+1)*0.166)*NUMPIXELS;
-//      saturation[b] = 0;
-//      spinning[b] = true;
-//      spinSpeed[b] = 1.33;
-//      initPos[b] = blockPos[b];
-//      strobeType[b] = 1;
-//      strobeSpeed[b] = 3;
-//    }
-//  }
-  
+  else if(value == 32){            // white and red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/8;
+      blockPos[b] = NUMPIXELS/2;
+      spinning[b] = true;
+      hue[b] = redHue;
+      initPos[b] = blockPos[b];
+      downOnly[b] = true;
+    }
+  }
+
+  else if(value == 33){            // white and red eighths, spinning opposite directions
+    spinSpeed[0] = 1;
+    spinSpeed[1] = 1;
+    reverse[1] = true;
+    for(int b=0; b<2; b++){
+      blockWidth[b] = NUMPIXELS/8;
+      blockPos[b] = NUMPIXELS/2;
+      spinning[b] = true;
+      hue[b] = blueHue;
+      initPos[b] = blockPos[b];
+      downOnly[b] = true;
+    }
+  }
   
   for(int i=0; i<NUMBLOCKS; i++){
     switchPos[i] = blockPos[i];
