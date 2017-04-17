@@ -94,6 +94,13 @@ void serialEvent() {
       FastLED.setBrightness(numberIn);
     }
 
+    else if(inputString.startsWith("a")){
+      preset(noteIn);
+    }
+    else if(inputString.startsWith("r")){
+      beatStart = millis();
+    }
+
 
     Serial.println("-----------------------");
 

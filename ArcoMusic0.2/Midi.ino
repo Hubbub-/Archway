@@ -20,102 +20,108 @@ void OnControlChange(byte channel, byte control, byte value) {
 void midiTrig(int in){
   // Side buttons
   if(in == 2){    // top side button selects block 0
-    selected = 0;
+    controlling = 0;
   }
   else if(in == 3){  // 2nd side button selects block 2
-    selected = 1; 
+    controlling = 1; 
   }
   else if(in == 4){
-    
+    controlling = 2;
   }
   else if(in == 5){
     
   }
   else if(in == 6){  // bottom side button resets timing
-    for(int i=0; i<NUMBLOCKS; i++){
-      beatStart = millis();
-    }
+    beatStart = millis();
   }
 
   // print information on what's selected
-  if(in < 36 || in > 43){
-    Serial.print("controlling block ");
+  if(in < 36){
+    Serial.print("controlling variable ");
     Serial.print(selected);
     Serial.print(" ");
   }
 
   
-  //bottom row
-  if(in == 32){
-    controlling = 0;  // hue 
-    Serial.println("hue");
-  }
-  else if(in == 33){
-    controlling = 1;  // saturation 
-    Serial.println("saturation");
-  }
-  else if(in == 34){
-    controlling = 2;  // velocity 
-    Serial.println("velocity");
-  }
-  else if(in == 35){
-    controlling = 3;  // width 
-    Serial.println("width");
-  }
 
   //top row
   else if(in == 44){
-    controlling = 4;  // strobeSpeed 
-    Serial.println("strobeSpeed");
+    preset(1);
   }
   else if(in == 45){
-    controlling = 1;  // saturation 
+    preset(2); 
   }
   else if(in == 46){
-    controlling = 2;  // velocity 
+    preset(3);
   }
   else if(in == 47){
-    controlling = 3;  // width 
+    preset(4); 
+  }
+
+  //top big row
+  else if(in == 40){
+    preset(5);
+  }
+  else if(in == 41){
+    preset(6);
+  }
+  else if(in == 42){
+    preset(7);
+  }
+  else if(in == 43){
+    preset(8);
   }
   
-  // big buttons for presets
+  // bottom big row
   else if(in == 36){
-    preset(0,1);
-    preset(1,0); 
+    preset(9);
   }
   else if(in == 37){
-    preset(0,2);
-    preset(1,2); 
+    preset(10);
   }
   else if(in == 38){
-    preset(0,3);
-    preset(1,0);
+    preset(11);
   }
   else if(in == 39){
-    preset(0,3);
-    preset(1,3);
+    preset(12);
   }
-  else if(in == 40){
-    preset(0,4);
-    preset(1,4);
+
+  //bottom row
+  if(in == 32){
+    preset(13);
+  }
+  else if(in == 33){
+    preset(14);
+  }
+  else if(in == 34){
+    preset(15);
+  }
+  else if(in == 35){
+    preset(16);
   }
   Serial.println(" ");
 }
 
 void slideControl(int val){
   if(controlling==0){        // hue
-    hue[selected] = map(val,0,127,190,255);
+    blueHue = map(val,0,127,GREENHUE,BLUEHUE);
+    
+    EEPROM.write(blueHueAddr, blueHue);
   }
   else if(controlling==1){    // saturation
-    saturation[selected] = val*2;
+    int r = map(val,0,127,REDHUE,255+ORANGEHUE);
+    if(r>255) r-=255;
+    redHue = r;
+    EEPROM.write(redHueAddr, redHue);
   }
   else if(controlling==2){    // velocity
-    targetVel[selected] = mapFloat(val,0,127,-20,20);
+    whiteSat = map(val,0,127,0,WARMSAT);
+    EEPROM.write(whiteSatAddr, whiteSat);
   }
-  else if(controlling==3){    // width
+  else if(controlling==4){    // width
     blockWidth[selected] = map(val,0,127,0,NUMPIXELS/2);
   }
-  else if(controlling==4){    // strobe speed
+  else if(controlling==5){    // strobe speed
     strobeSpeed[selected] = pow(2,map(val,0,127,0,4));
   }
 }

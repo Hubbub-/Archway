@@ -6,8 +6,17 @@ void blocksUpdate(){
     if(blockPos[i] > NUMPIXELS) blockPos[i] = 0;
     if(blockPos[i] < 0) blockPos[i] = NUMPIXELS;
 
-    
+    int spinPer = 240000/BPM/spinSpeed[i];           // convert frequency (strobes per beat) to period
+    if(spinning[i]){
+      if(reverse[i]){
+        blockPos[i] = initPos[i] - mapFloat((millis()-beatStart) % spinPer, 0, spinPer, 0, NUMPIXELS);
+      }
+      else{
+        blockPos[i] = initPos[i] + mapFloat((millis()-beatStart) % spinPer, 0, spinPer, 0, NUMPIXELS);
+      }
+    }
 
+    
     // Update Velocities
     // limit targetVel
     if(abs(targetVel[i])<5) targetVel[i]=0;  // make targetvel 0 if it's really small
@@ -65,35 +74,91 @@ void blocksRender(){
   }
   // apply colour to the blocks
   for(int i=0; i<NUMBLOCKS; i++){
+    if(switching[i]) blockPos[i] = switchPos[i];
     // switching
     int switchPer = 120000/BPM/switchSpeed;           // convert frequency (strobes per beat) to period
 
     //if         it's time to switch            and it hasn't just switched   and it should be switching
-    if((millis()-beatStart) % switchPer < 25 && (millis()-lastSwitch) > 25 && switching[i]){
-      blockPos[i] = blockPos[nextSwitching(i)];
+    if((millis()-beatStart) % switchPer < 50 && (millis()-lastSwitch[i]) > 50 && switching[i]){
+      switchPos[i] = blockPos[nextSwitching(i)];
+      lastSwitch[i] = millis();
     }
-    
+
     
     //strobe
     // 1 minute/BPM = beat length (I used 2 minutes so we could do half time)
-    int strobePer = 120000/BPM/strobeSpeed[i];           // convert frequency (strobes per beat) to period
+    int strobePer = 240000/BPM/strobeSpeed[i];           // convert frequency (strobes per beat) to period
 
     // if blackout part of strobe 1 (50/50)
     if((millis()-beatStart) % strobePer > strobePer/2 && strobeType[i]==1){
       
     }
-    // if blackout part of strobe 2 (25/75)
-    else if((millis()-beatStart) % strobePer > strobePer*0.25 && strobeType[i]==2){
+    // if blackout part of strobe 2 (7/93)
+    else if((millis()-beatStart) % strobePer > strobePer*0.07 && strobeType[i]==2){
       
     }
-    // if first blackout part of strobe 3 (25/75 syncopated)
-    else if((millis()-beatStart) % strobePer > strobePer*0.5 && strobeType[i]==3){
+    // if first blackout part of strobe 3 (50/7/43 syncopated)
+    else if((millis()-beatStart) % strobePer < strobePer*0.5 && strobeType[i]==3){
       
     }
-    // if second blackout part of strobe 3 (25/75 syncopated)
-    else if((millis()-beatStart) % strobePer > strobePer*0.75 && strobeType[i]==3){
+    // if second blackout part of strobe 3 (50/7/43 syncopated)
+    else if((millis()-beatStart) % strobePer > strobePer*0.57 && strobeType[i]==3){
       
     }
+
+    // if blackout part of strobe 4 (37.5/62.5)
+    else if((millis()-beatStart) % strobePer > strobePer*0.375 && strobeType[i]==4){
+      
+    }
+    // if first blackout part of strobe 5 (50/37.5/12.5 syncopated)
+    else if((millis()-beatStart) % strobePer < strobePer*0.5 && strobeType[i]==5){
+      
+    }
+    // if second blackout part of strobe 5 (50/37.5/12.5 syncopated)
+    else if((millis()-beatStart) % strobePer > strobePer*0.875 && strobeType[i]==5){
+      
+    }
+
+    // if first blackout part of strobe 6 (12.5/75/12/5)
+    else if((millis()-beatStart) % strobePer < strobePer*0.125 && strobeType[i]==6){
+      
+    }
+    // if second blackout part of strobe 6 (12.5/75/12.5)
+    else if((millis()-beatStart) % strobePer > strobePer*0.875 && strobeType[i]==6){
+      
+    }
+
+    // if blackout part of strobe 7 (44/12/44)
+    else if((millis()-beatStart) % strobePer > strobePer*0.44 && (millis()-beatStart) % strobePer < strobePer*0.56  && strobeType[i]==7){
+      
+    }
+
+    // if first blackout part of strobe 8 (20->10<-70)
+    else if((millis()-beatStart) % strobePer < strobePer*0.2 && strobeType[i]==8){
+      
+    }
+    // if second blackout part of strobe 8 (20->10<-70)
+    else if((millis()-beatStart) % strobePer > strobePer*0.3 && strobeType[i]==8){
+      
+    }
+    // if first blackout part of strobe 9 (70->10<-20)
+    else if((millis()-beatStart) % strobePer < strobePer*0.7 && strobeType[i]==9){
+      
+    }
+    // if second blackout part of strobe 9 (70->10<-20)
+    else if((millis()-beatStart) % strobePer > strobePer*0.8 && strobeType[i]==9){
+      
+    }
+
+    // if first blackout part of strobe 10 (40->20<-40)
+    else if((millis()-beatStart) % strobePer < strobePer*0.4 && strobeType[i]==10){
+      
+    }
+    // if second blackout part of strobe 10 (40->20<-40)
+    else if((millis()-beatStart) % strobePer > strobePer*0.6 && strobeType[i]==10){
+      
+    }
+   
     
     else {    // If not in blackout part of strobe
       for(int j=-blockWidth[i]/2; j<blockWidth[i]/2; j++){

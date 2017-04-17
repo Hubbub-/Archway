@@ -53,11 +53,23 @@
 #define printBlocksAddr 16
 #define printMidiAddr   18
 #define printStripsAddr 20
+#define presetAddr      22
+#define blueHueAddr     24
+#define redHueAddr      26
+#define whiteSatAddr    28
 
 //Define hues
-#define BLUEHUE  170
+#define BLUEHUE  180
+#define GREENHUE 100
 #define REDHUE   250
-#define SPINSPEED 20
+#define ORANGEHUE 15
+#define WARMHUE  15
+#define WARMSAT  170
+
+byte blueHue = GREENHUE;
+byte redHue = REDHUE;
+byte whiteSat = WARMSAT;
+
 
 bool pixelUsed[NUMPIXELS];
 
@@ -97,7 +109,14 @@ unsigned long beatStart;
 //switch
 bool switching[NUMBLOCKS];
 float switchSpeed;
-unsigned long lastSwitch;
+unsigned long lastSwitch[NUMBLOCKS];
+float switchPos[NUMBLOCKS];
+
+//spin
+bool spinning[NUMBLOCKS];
+float spinSpeed[NUMBLOCKS];
+float initPos[NUMBLOCKS];
+bool reverse[NUMBLOCKS];
 
 
 //block control
@@ -126,6 +145,10 @@ void setup() {
   printBlocks = EEPROM.read(printBlocksAddr);
   printStrips = EEPROM.read(printStripsAddr);
   printMidi = EEPROM.read(printMidiAddr);
+  
+  blueHue = EEPROM.read(blueHueAddr);
+  redHue = EEPROM.read(redHueAddr);
+  whiteSat = EEPROM.read(whiteSatAddr);
 
 
   // Start Serial
@@ -140,9 +163,8 @@ void setup() {
   FastLED.addLeds<WS2812,PIXELPIN1,GRB>(pixels1, NUMLEDS);
   FastLED.addLeds<WS2812,PIXELPIN2,GRB>(pixels2, NUMLEDS);
 
-  // initiate 2 blocks
-  initBlock(0);
-  initBlock(1);
+  // initiate with last preset
+  preset(EEPROM.read(presetAddr));
 
 
   Serial.println("Setup done, send 'i' for info");

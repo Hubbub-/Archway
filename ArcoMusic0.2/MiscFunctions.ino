@@ -34,9 +34,10 @@ float fade(float current, float target, float amount){
 int nextSwitching(int in){
   int result = in;
   for(int i=in+1; i<NUMBLOCKS+in; i++){
-    if(i > NUMBLOCKS) i -= NUMBLOCKS;   //wrap around
-    if(switching[i]){     // if it finds a switching block
-      result = i;         // save the result
+    int sel = i;
+    if(sel >= NUMBLOCKS) sel -= NUMBLOCKS;   //wrap around
+    if(switching[sel]){     // if it finds a switching block
+      result = sel;         // save the result
       break;              // exit the for loop
     }
   }
