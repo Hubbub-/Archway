@@ -45,3 +45,14 @@ int nextSwitching(int in){
 }
 
 //--------------------------------------------------------------------------
+ void reverseAll(){
+  for(byte i=0; i<NUMBLOCKS; i++){
+    if(spinning[i]){
+      reverse[i] = !reverse[i];
+      initPos[i] = blockPos[i];
+      Serial.print("block");
+      Serial.print("block");
+    }
+  }
+ }
+

@@ -1,7 +1,9 @@
 // Apply pixel colours to the right strip
 void applyColour(float pixelin, float h, float s, float v){
   int pixel = (int) pixelin;
-  
+
+  if(pixel<0) pixel += NUMPIXELS;
+  else if(pixel>NUMPIXELS) pixel -= NUMPIXELS;
   
   // strip1
   if(pixel%2 == 0){

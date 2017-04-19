@@ -68,7 +68,26 @@ float fade(float current, float target, float amount){
  * 4A1: 11  Four white blocks spinning
  * 4A2: 12  Four blue eighths spinning
  * 4A3: 13  Four red eighths spinning
- * 
+ * 4B1: 14  Seven white segments, strobing interchanging
+ * 4B2: 15  Seven white segments, strobing interchanging faster
+ * 4C1: 16  Half white spinning slow
+ * 4C2: 17  Half White Spinning fast
+ * 4C3: 18  Half White Spinning slow, blinking
+ * 4C4: 19  Half White Spinning fast, with red segment in darkness
+ * 4D1: 20  Two White Quarters, switching
+ * 4D2: 21  Two White Quarters, switching, blinking
+ * 4D3: 22  Two White Quarters, switching, blinking in middle
+ * 4E1: 23  Half White, Switching, with red strobe in darkness
+ * 4E2: 24  Half White, Switching, with blue strobe in darkness
+ * 4E3: 25  Half Red, Switching, with white strobe in darkness
+ * 4E4: 26  Half Blue, Switching, with white strobe in darkness
+ * 4F1: 27  Two Small white segments, spinning opposite directions
+ * 4F2: 28  Two Small red segments, spinning opposite directions
+ * 4F3: 29  White segment and red segment, spinning opposite directions
+ * 4G1: 30  Two White segments falling from top
+ * 4G2: 31  Two Larger White segments falling from top
+ * 4G3: 32  Two Larger Red segments falling from top
+ * 4G3: 33  Two Larger Blue segments falling from top
  * 
  * change white warmth (pure to warm)
  * change blue (135 - 170)

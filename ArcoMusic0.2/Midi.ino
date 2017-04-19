@@ -19,110 +19,102 @@ void OnControlChange(byte channel, byte control, byte value) {
 
 void midiTrig(int in){
   // Side buttons
-  if(in == 2){    // top side button selects block 0
+  if(in == 2){    // top side button selects blueHue
     controlling = 0;
   }
-  else if(in == 3){  // 2nd side button selects block 2
+  else if(in == 3){  // 2nd side button selects redHue
     controlling = 1; 
   }
   else if(in == 4){
-    controlling = 2;
+    controlling = 2;  // 3rd side button selects whiteWarmth
   }
-  else if(in == 5){
-    
+  else if(in == 5){   // 4th side button reverses direction
+    reverseAll();
   }
   else if(in == 6){  // bottom side button resets timing
     beatStart = millis();
-  }
-
-  // print information on what's selected
-  if(in < 36){
-    Serial.print("controlling variable ");
-    Serial.print(selected);
-    Serial.print(" ");
   }
 
   
 
   //top row
   else if(in == 44){
-    preset(1);
+    setting[0]=0;
   }
   else if(in == 45){
-    preset(2); 
+    setting[0]=1; 
   }
   else if(in == 46){
-    preset(3);
+    setting[0]=2;
   }
   else if(in == 47){
-    preset(4); 
+    setting[0]=3; 
   }
 
   //top big row
   else if(in == 40){
-    preset(5);
+    setting[1]=0;
   }
   else if(in == 41){
-    preset(6);
+    setting[1]=1;
   }
   else if(in == 42){
-    preset(7);
+    setting[1]=2;
   }
   else if(in == 43){
-    preset(8);
+    setting[1]=3;
   }
   
   // bottom big row
   else if(in == 36){
-    preset(9);
+    setting[1]=4;
   }
   else if(in == 37){
-    preset(10);
+    setting[1]=5;
   }
   else if(in == 38){
-    preset(11);
+    setting[1]=6;
   }
   else if(in == 39){
-    preset(12);
+    
   }
 
   //bottom row
   if(in == 32){
-    preset(13);
+    setting[2]=0;
   }
   else if(in == 33){
-    preset(14);
+    setting[2]=1;
   }
   else if(in == 34){
-    preset(15);
+    setting[2]=2;
   }
   else if(in == 35){
-    preset(16);
+    setting[2]=3;
   }
+
+  // update preset when bottom row pressed
+  if(in >= 32 && in <= 35) preset(settingMap[setting[0]][setting[1]][setting[2]]);
   Serial.println(" ");
 }
 
 void slideControl(int val){
-  if(controlling==0){        // hue
+  if(controlling==0){        // bluehue
     blueHue = map(val,0,127,GREENHUE,BLUEHUE);
     
     EEPROM.write(blueHueAddr, blueHue);
   }
-  else if(controlling==1){    // saturation
+  else if(controlling==1){    // redhue
     int r = map(val,0,127,REDHUE,255+ORANGEHUE);
     if(r>255) r-=255;
     redHue = r;
     EEPROM.write(redHueAddr, redHue);
   }
-  else if(controlling==2){    // velocity
+  else if(controlling==2){    // warmth
     whiteSat = map(val,0,127,0,WARMSAT);
     EEPROM.write(whiteSatAddr, whiteSat);
   }
-  else if(controlling==4){    // width
-    blockWidth[selected] = map(val,0,127,0,NUMPIXELS/2);
-  }
-  else if(controlling==5){    // strobe speed
-    strobeSpeed[selected] = pow(2,map(val,0,127,0,4));
-  }
+
+  preset(settingMap[setting[0]][setting[1]][setting[2]]);
 }
 

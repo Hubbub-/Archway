@@ -1,47 +1,26 @@
-void preset(int block, int value){
-  
-  if(value == 0){               // disappear
-    blockWidth[block] = 0;
-  }
-  else if(value == 1){          // full
-    blockWidth[block] = NUMPIXELS;
-    blockPos[block] = NUMPIXELS/2;
-    targetVel[block] = 0;
-    vel[block] = 0;
-  }
-  else if(value == 2){          // half
-    blockWidth[block] = NUMPIXELS/NUMBLOCKS;
-    blockPos[block] = blockWidth[block]*block + blockWidth[block]/2;
-    targetVel[block] = 0;
-    vel[block] = 0;
-  }
-  else if(value == 3){          // spinning
-    targetVel[block] = 10;
-    blockWidth[block] = 60;
-  }
-  else if(value == 4){          // strobe
-    strobeType[block]++;
-    if(strobeType[block] > 3) strobeType[block]=0;
-  }
-}
-
 void preset(int value){
   EEPROM.write(presetAddr, value);
-  for(int i=0; i<NUMBLOCKS; i++){
-    blockWidth[i] = 0;
-    blockPos[i] = 0;
-    targetVel[i] = 0;
-    vel[i] = 0;
-    hue[i] = WARMHUE;
-    brightness[i] = 255;
-    saturation[i] = 255;
-    blockWidth[i] = 0;
-    strobeType[i] = 0;
-    switching[i] = false;
-    spinning[i] = false;
-    spinSpeed[i] = 1;
-    reverse[i] = false;
-    downOnly[i] = false;
+  Serial.print("Preset:");
+  Serial.print(setting[0]+1);
+  Serial.print(setting[1]+1);
+  Serial.print(setting[2]+1);
+  Serial.print(" number:");
+  Serial.println(value);
+  if(value > 0){
+    for(int i=0; i<NUMBLOCKS; i++){
+      blockWidth[i] = 0;
+      blockPos[i] = 0;
+      hue[i] = WARMHUE;
+      brightness[i] = 255;
+      saturation[i] = 255;
+      blockWidth[i] = 0;
+      strobeType[i] = 0;
+      switching[i] = false;
+      spinning[i] = false;
+      spinSpeed[i] = 1;
+      reverse[i] = false;
+      downOnly[i] = false;
+    }
   }
   if(value == 1){             // half blue, half red
     blockWidth[0] = NUMPIXELS/2;
@@ -544,5 +523,62 @@ void preset(int value){
   
   for(int i=0; i<NUMBLOCKS; i++){
     switchPos[i] = blockPos[i];
+  }
+}
+
+
+//-----------------------------------------------------------------------------------------
+
+
+void setSettingMap(){
+  for(byte i=0; i<4; i++){
+    settingMap[0][0][i] = 1;  // 1Ax
+  }
+  for(byte i=0; i<4; i++){
+    settingMap[0][1][i] = 2;  // 1Bx
+  }
+
+  settingMap[1][0][0] = 3;    // 2A1
+  settingMap[1][0][1] = 4;    // 2A2
+
+  for(byte i=0; i<4; i++){
+    settingMap[1][1][i] = 5;  // 2Bx
+  }
+
+  settingMap[2][0][0] = 6;    // 3A1
+  settingMap[2][0][1] = 7;    // 3A2
+  settingMap[2][0][2] = 8;    // 3A3
+
+  for(byte i=0; i<4; i++){
+    settingMap[2][1][i] = 9;  // 3Bx
+  }
+  for(byte i=0; i<4; i++){
+    settingMap[2][2][i] = 10;  // 3Cx
+  }
+  settingMap[3][0][0] = 11;    // 4A1
+  settingMap[3][0][1] = 12;    // 4A2
+  settingMap[3][0][2] = 13;    // 4A3
+  
+  settingMap[3][1][0] = 14;    // 4B1
+  settingMap[3][1][1] = 15;    // 4B2
+
+  for(byte i=0; i<4; i++){     // 4C1-4
+    settingMap[3][2][i] = i+16;
+  }
+
+  settingMap[3][3][0] = 20;    // 4D1
+  settingMap[3][3][1] = 21;    // 4D2
+  settingMap[3][3][2] = 22;    // 4D3
+
+  for(byte i=0; i<4; i++){     // 4E1-4
+    settingMap[3][4][i] = i+23;
+  }
+
+  settingMap[3][5][0] = 27;    // 4F1
+  settingMap[3][5][1] = 28;    // 4F2
+  settingMap[3][5][2] = 29;    // 4F3
+
+  for(byte i=0; i<4; i++){     // 4G1-4
+    settingMap[3][6][i] = i+30;
   }
 }

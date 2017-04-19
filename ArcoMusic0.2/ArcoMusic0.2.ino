@@ -9,23 +9,23 @@
 
   Button mapping:
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
-  |      |   |  Setting 1  |  |  Setting 2  |  |  Setting 3  |  |  Setting 4  |
+  |BlueHu|   | Setting 1.. |  | Setting 2.. |  | Setting 3.. |  | Setting 4.. |
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
   
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
-  |      |   |             |  |             |  |             |  |             |
-  +------+   |  Setting 5  |  |  Setting 6  |  |  Setting 7  |  |  Setting 8  |
+  |RedHue|   |             |  |             |  |             |  |             |
+  +------+   | Setting .A. |  | Setting .B. |  | Setting .C. |  | Setting .D. |
              |             |  |             |  |             |  |             |
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
-  |      |
+  |Warmth|
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
              |             |  |             |  |             |  |             |
-  +------+   |  Setting 9  |  | Setting 10  |  | Setting 11  |  | Setting 12  |
-  |      |   |             |  |             |  |             |  |             |
+  +------+   | Setting .E. |  | Setting .F. |  | Setting .G. |  |             |
+  |Revers|   |             |  |             |  |             |  |             |
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
   
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
-  |Reset |   | Setting 13  |  | Setting 14  |  | Setting 15  |  | Setting 16  |
+  |Reset |   | Setting ..1 |  | Setting ..2 |  | Setting ..3 |  | Setting ..4 |
   +------+   +-------------+  +-------------+  +-------------+  +-------------+
 */
 
@@ -34,9 +34,6 @@
 #include <EEPROM.h>
 #include "FastLED.h"
 
-
-
-#define NUMLDRS 14
 
 // Define pin and pixel number for LEDs
 #define PIXELPIN1      3
@@ -97,10 +94,6 @@ float brightness[NUMBLOCKS];
 float blockWidth[NUMBLOCKS];
 
 
-//velocity of the block
-float vel[NUMBLOCKS];
-float targetVel[NUMBLOCKS];
-
 //strobe
 byte strobeType[NUMBLOCKS];    //0: no strobe  1: 50/50  2: 25/75  3: 25/75 syncopated
 float strobeSpeed[NUMBLOCKS];
@@ -123,6 +116,8 @@ bool downOnly[NUMBLOCKS];
 //block control
 byte selected = 0;
 byte controlling = 0; // 0:hue 1:saturation 2:velocity 3: size
+byte setting[3];
+byte settingMap[4][7][4];
 
 
 //whether or not to print information
@@ -166,6 +161,8 @@ void setup() {
 
   // initiate with last preset
   preset(EEPROM.read(presetAddr));
+  // mpa presets to midi buttons
+  setSettingMap();
 
 
   Serial.println("Setup done, send 'i' for info");

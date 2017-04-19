@@ -77,7 +77,6 @@ void serialEvent() {
     else if(inputString.startsWith("b")){   // incoming block command
       if(commandString == "w") blockWidth[blockIn] = numberIn;   // change size of block
       if(commandString == "p") blockPos[blockIn] = numberIn;   // change position of block
-      if(commandString == "v") targetVel[blockIn] = numberIn;   // change velocity of block
       if(commandString == "h") hue[blockIn] = numberIn;   // change hue of block
       if(commandString == "s") saturation[blockIn] = numberIn;   // change hue of block
     }
