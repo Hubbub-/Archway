@@ -17,11 +17,10 @@ void midiTrig(int in){
     sat = whiteSat;
   }
   else if(in == 5){   // 4th side button reverses direction
-    pulsing = !pulsing;
-    bright = 255;
+    
   }
   else if(in == 6){  // bottom side button resets timing
-    beatStart = millis();
+    beatStart = millis()+50;
   }
 //
 //
@@ -43,32 +42,53 @@ void midiTrig(int in){
   else if(in == 40){
     hue = blueHue;
     sat = 255;
+    bright = 255;
   }
   else if(in == 41){
     hue = redHue;
     sat = 255;
+    bright = 255;
   }
   else if(in == 42){
     hue = WARMHUE;
     sat = whiteSat;
+    bright = 255;
   }
   else if(in == 43){
-    
+    bright = 0;
   }
 //  
 //  // bottom big row
-//  else if(in == 36){
-//    setting[1]=4;
-//  }
-//  else if(in == 37){
-//    setting[1]=5;
-//  }
-//  else if(in == 38){
-//    setting[1]=6;
-//  }
-//  else if(in == 39){
-//    
-//  }
+  else if(in == 36){
+    pulsing=false;
+    bright = 255;
+  }
+  else if(in == 37){
+    pulsing = true;
+    pulseSpeed = 1;
+  }
+  else if(in == 38){
+    pulsing = true;
+    pulseSpeed = 2;
+  }
+  else if(in == 39){
+    delay(4000);
+    
+    for(int i=0; i<NUMLEDS; i++){
+      byte b = map(i,0,NUMLEDS,0,255);
+      allBars(i,0,0,b);
+      FastLED.show();
+      delay(1);
+    }
+    for(int i=NUMLEDS-1; i>0; i--){
+      allBars(i,0,0,255);
+      FastLED.show();
+      delay(1);
+    }
+    hue = WARMHUE;
+    sat = whiteSat;
+    bright = 255;
+  }
 //
 //  //bottom row
 //  if(in == 32){

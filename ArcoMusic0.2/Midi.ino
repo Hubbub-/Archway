@@ -76,7 +76,22 @@ void midiTrig(int in){
     setting[1]=6;
   }
   else if(in == 39){
-    
+    for(int i=0; i<NUMPIXELS; i++){
+      applyColour(i,0,0,0);
+      
+    }
+    FastLED.show();
+    delay(4000);
+    for(byte i=0; i<255; i++){
+      for(int j=0; j<NUMPIXELS/2; j++){
+        applyColour(j,blueHue,255,i);
+      }
+      for(int j=NUMPIXELS/2; j<NUMPIXELS; j++){
+        applyColour(j,redHue,255,i);
+      }
+      FastLED.show();
+      delay(1);
+    }
   }
 
   //bottom row

@@ -1,4 +1,5 @@
 
+
 #include <EEPROM.h>
 #include "FastLED.h"
 
@@ -25,6 +26,11 @@
 #define WARMHUE  15
 #define WARMSAT  170
 
+
+
+String inputString = "";         // a string to hold incoming data
+boolean stringComplete = false;  // whether the string is complete
+
 byte blueHue = BLUEHUE;
 byte redHue = REDHUE;
 byte whiteSat = WARMSAT;
@@ -36,6 +42,7 @@ byte sat = 255;
 byte bright = 255;
 bool pulsing = false;
 unsigned long beatStart;
+byte pulseSpeed;
 
 
 byte controlling;
@@ -57,6 +64,7 @@ void setup() {
   redHue = EEPROM.read(redHueAddr);
   whiteSat = EEPROM.read(whiteSatAddr);
   hue = blueHue;
+  bright = 0;
 
   
   
@@ -77,6 +85,7 @@ void setup() {
 
 void loop() {
   usbMIDI.read(); // USB MIDI receive
+  serialEvent();
   barsUpdate();  //update blocks
 
   FastLED.show(); // This sends the updated pixel color to the hardware.
@@ -87,7 +96,7 @@ void loop() {
 
 
 void barsUpdate(){
-  if (pulsing) bright = 255-beat8(BPM,beatStart);
+  if (pulsing) bright = 255-beat8(BPM*pulseSpeed,beatStart);
   allBars(hue,sat,bright);
 }
 
