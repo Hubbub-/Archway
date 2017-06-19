@@ -120,6 +120,7 @@ bool printTrigs;
 bool printBlocks;
 bool printMoves;
 bool printStrips;
+bool triggering = true;
 byte bright;  //how bright the FastLEDs are
 
 String inputString = "";         // a string to hold incoming data
@@ -242,11 +243,11 @@ void loop() {
   if(mode == 1){  
     idlePulse(); //pulse
     //check if it should still be idle
-    if(distanceDetected && forceMode !=1){ //If there's someone in the ring
+    if(distanceDetected() && forceMode !=1 && millis()>idleStart+2000){ //If there's someone in the ring
       mode = 3;
       Serial.println("Mode: Interaction");
     }
-    else if(moveDetected() && forceMode != 1){  //If there's movement
+    else if(moveDetected() && forceMode != 1 && millis()>idleStart+2000){  //If there's movement
       mode = 2;     // Animation mode
       preset(random(1,34));
       Serial.println("Mode: Animation");
@@ -278,7 +279,7 @@ void loop() {
     if(millis() > lastActed + CHANGEDELAY && forceMode!=3){
       mode=2;
       preset(random(1,34));
-      Serial.println("Mode: Interaction");
+      Serial.println("Mode: Animation");
     }
   }
   else mode = 1;

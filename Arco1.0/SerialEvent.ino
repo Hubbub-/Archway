@@ -24,8 +24,8 @@ void serialEvent() {
 
     // Get info by sending "i"
     if(inputString.startsWith("i")){  
-      Serial.print("lastActed: ");
-      Serial.println(lastActed);
+      Serial.print("mode: ");
+      Serial.println(mode);
       Serial.print("printBlocks(pb): ");
       Serial.println(printLDRs);
       Serial.print("printLDRs(pl): ");
@@ -38,6 +38,8 @@ void serialEvent() {
       Serial.println(printStrips);
       Serial.print("bright(br...): ");
       Serial.println(bright);
+      Serial.print("triggering(tr): ");
+      Serial.println(triggering);
       Serial.println("force trigger(ft...) 0-13");
       Serial.println("force mode(fm...) 0-3");
       Serial.println("force preset(fp...) 1-33");
@@ -101,6 +103,13 @@ void serialEvent() {
       }
     }
 
+    // toggle the triggering on/off with "tr"
+    else if(inputString.startsWith("tr")){  // Volume string
+      triggering = !triggering;
+      Serial.print("triggering(tr): ");
+      Serial.println(triggering);
+    }
+
     // Force trigger with "ft..."
     else if(inputString.startsWith("ft")){
       if(inBounds(numberIn,0,NUMLDRS-1)){
@@ -113,6 +122,7 @@ void serialEvent() {
       if(inBounds(numberIn,0,3)){
         forceMode = numberIn;
         mode = numberIn;
+        if(mode==2) preset(random(1,32));
         Serial.print("forceMode: ");
         Serial.println(forceMode);
       }
@@ -143,7 +153,7 @@ bool inBounds(int in, int low, int high){
     Serial.print("Value entered must be between ");
     Serial.print(low);
     Serial.print(" & ");
-    Serial.println(low);
+    Serial.println(high);
   }
   return result;
 }

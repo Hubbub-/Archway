@@ -4,7 +4,7 @@ void blocksUpdate(){
   for (int i=0; i<NUMBLOCKS; i++){     // cycle through blocks
     
     // -- TIMING --
-    if (alive[i]){
+    if (alive[i] && mode == 3){
       lifeTime[i] = millis() - lifeStart[i];    // update life time
       
       

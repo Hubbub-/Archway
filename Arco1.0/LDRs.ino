@@ -20,7 +20,7 @@ void LDRs() {
       float sens = 0.12;
 //      if(idle) sens = 0.2;
       // if there's a significant change in reading and it hasn't just gone to idle
-      if (abs(heldVal[i]-LDR[i]) > middle*sens+10 && millis() > idleStart+5000) {  
+      if (abs(heldVal[i]-LDR[i]) > middle*sens+10 && millis() > idleStart+5000 && triggering) {  
         trig(i);                  // trigger the pixel spawn/explode
       }
 
@@ -67,24 +67,25 @@ void trig(int LDR) {
     Serial.print("Triggered LDR#");
     Serial.print(LDR);
   }
-
-  if(blockAt(LDR) < 0){    // If there's no block at the LDR
-    initBlock(LDR);             // make a new block
-    if(printTrigs){
-      Serial.print(" | made block at ");
-      Serial.print(LDR);
-    }
-    int target = blockAt(LDR);    // select the block
-    // Explode it
-    explode(target);
-  }
-  
-  else{       // if there is a block at the LDR
-    int target = blockAt(LDR);    // select the block
-
-    // Explode it
-    if(lifeTime[target] > 500 && !exploding[target]){       // only if it's old enough
+  if(mode == 3){             // If interaction mode
+    if(blockAt(LDR) < 0){    // If there's no block at the LDR
+      initBlock(LDR);        // make a new block
+      if(printTrigs){
+        Serial.print(" | made block at ");
+        Serial.print(LDR);
+      }
+      int target = blockAt(LDR);    // select the block
+      // Explode it
       explode(target);
+    }
+    
+    else{       // if there is a block at the LDR
+      int target = blockAt(LDR);    // select the block
+  
+      // Explode it
+      if(lifeTime[target] > 500 && !exploding[target]){       // only if it's old enough
+        explode(target);
+      }
     }
   }
 
