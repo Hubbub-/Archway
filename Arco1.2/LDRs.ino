@@ -17,7 +17,7 @@ void LDRs() {
     int middle = minBright[i]+difference/2;
     
     if (heldSince == 0) {        // if "heldsince" is 0 (only happens every 5 loops)
-      float sens = 0.12;
+      float sens = 0.18;
 //      if(idle) sens = 0.2;
       // if there's a significant change in reading and it hasn't just gone to idle
       if (abs(heldVal[i]-LDR[i]) > middle*sens+10 && millis() > idleStart+5000 && triggering) {  
@@ -83,7 +83,7 @@ void trig(int LDR) {
       int target = blockAt(LDR);    // select the block
   
       // Explode it
-      if(lifeTime[target] > 500 && !exploding[target]){       // only if it's old enough
+      if(lifeTime[target] > 800 && !exploding[target]){       // only if it's old enough
         explode(target);
       }
     }

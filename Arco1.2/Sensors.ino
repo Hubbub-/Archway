@@ -16,6 +16,7 @@ bool moveDetected(){
     if (pinHigh && !PIRbool[i]){
       PIRbool[i] = true;
       newMovement = true;
+      animInit();
     }
     // if there's no movement but it's stored
     else if(!pinHigh && PIRbool[i]){
@@ -56,7 +57,10 @@ bool distanceDetected(){
     Serial.print("Distance: ");
     Serial.println(distIn);
   }
-  if(distIn < 160 && distIn > 0) detected=true;
+  if(distIn < 160 && distIn > 0){
+    detected=true;
+    lastDistTime = millis();
+  }
 
   return detected;
 }

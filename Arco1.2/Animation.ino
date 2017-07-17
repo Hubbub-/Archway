@@ -1,13 +1,13 @@
 void animInit(){
-  animStart = millis();
-  preset(random(2,34));
+  animLength = millis()+random(8000,15000);
+  preset(random(1,27));
   Serial.println("Mode: Animation");
 }
 
 
 // blocks
 void animUpdate(){
-  if(millis() > animStart + 10000) animInit();
+  if(millis() > animLength) animInit();  //reset animation every 10 seconds
   
   for (int i=0; i<NUMBLOCKS; i++){     // cycle through blocks
     
@@ -86,7 +86,7 @@ void animRender(){
         if(pos > NUMPIXELS) pos -= NUMPIXELS;
         if(pos < 0) pos += NUMPIXELS;
         if(pos>0 && pos<NUMPIXELS){
-          applyColour(pos, hue[i], saturation[i], brightness[i]);
+          applyColour(pos, hue[i], saturation[i], brightnes[i]);
         }
         // Apply pixel types for serial printing
         // If in range

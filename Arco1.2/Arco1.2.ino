@@ -7,6 +7,13 @@
   2. Infer movement of shadows
   3. Use placement and movement to control LED strips
 
+  To do:
+  1. Exit interactive state after 10 seconds without distance sensor
+  2. Change animation every time motion is sensed
+  3. Change white to coulour in anim state
+  4. Fix blacking out of block fades
+  5. Change block pulsing to smaller range
+
 
   Makes use of the EEPROM and FastLED library
 */
@@ -25,12 +32,12 @@
 #define PIXELPIN2      4
 #define NUMLEDS        300   //Number of LEDs per strip
 #define NUMPIXELS      600   //Total number of LEDs (both strips)
-#define NUMBLOCKS       9    //number of blocks
+#define NUMBLOCKS       5    //number of blocks
 #define MAXVEL         30
 #define FADESPEED      0.14
 #define INITBLOCKSIZE   25
 
-#define BPM   106
+#define BPM   120
 
 #define CHANGEDELAY    60000   // milliseconds to wait before going down a mode
 #define WHITEBRIGHT    200     // how bright the background white is /255
@@ -77,14 +84,12 @@ int pColour[NUMBLOCKS][3] = {
   {0,255,255},
   {0,255,255},
   {0,255,255},
-  {0,255,255},
-  {0,255,255},
-  {0,255,255},
   {0,255,255}
 };
 
 unsigned long pingTime;
 int distIn;
+unsigned long lastDistTime;
 
 float LDR[NUMLDRS];
 float prevLDR[NUMLDRS];
@@ -98,7 +103,7 @@ bool alive[NUMBLOCKS];               // is it alive
 
 float saturation[NUMBLOCKS];
 float hue[NUMBLOCKS];
-float brightness[NUMBLOCKS];
+float brightnes[NUMBLOCKS];
 bool exploding[NUMBLOCKS];
 float blockSize[NUMBLOCKS];
 float pulseSpeed[NUMBLOCKS];
@@ -150,7 +155,7 @@ unsigned long idleStart;      // When the idle state started
 unsigned long idleEnd;        // When the idle state ended
 
 // Animation
-unsigned long animStart;
+unsigned long animLength;
 byte hue1, hue2;
 //strobe
 byte strobeType[NUMBLOCKS];    //0: no strobe  1: 50/50  2: 25/75  3: 25/75 syncopated
@@ -290,7 +295,7 @@ void loop() {
   else if (mode == 3){  
     blocksRender();
     // After a while of no interaction
-    if(!distanceDetected() && millis() > lastActed + CHANGEDELAY && forceMode!=3){
+    if(!distanceDetected() && millis() > lastDistTime + 15000 && forceMode!=3){
       mode=2;
       animInit();
     }
@@ -321,13 +326,13 @@ void loop() {
 void idlePulse(){
   unsigned long pulseTime = millis()-idleStart;
   int pulseTimer = int(pulseTime*0.1) % 255;
-  int brightness = map(quadwave8(pulseTimer),0,255,150,255);
-  idleHue += 0.05;
+  int brightnes = map(quadwave8(pulseTimer),0,255,150,255);
+  idleHue += 0.2;
   if(idleHue >= 255) idleHue = 0;
   int ih = int(idleHue);
   for(int i=0; i<NUMLEDS; i++){
-    pixels1[i] = CHSV(ih,brightness,brightness);
-    pixels2[i] = CHSV(ih,brightness,brightness);
+    pixels1[i] = CHSV(ih,brightnes,brightnes);
+    pixels2[i] = CHSV(ih,brightnes,brightnes);
   }
   FastLED.show();
 }

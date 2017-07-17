@@ -9,7 +9,7 @@ void blocksUpdate(){
       
       if(!exploding[i]){                      // if the block is not exploding, pulse
         int pulseTimer = int(lifeTime[i]*pulseSpeed[i]) % 255;
-        brightness[i] = map(triwave8(pulseTimer),0,255,0,255);
+        brightnes[i] = map(triwave8(pulseTimer),0,255,150,255);
         saturation[i] = 255;
       }
 
@@ -21,7 +21,7 @@ void blocksUpdate(){
       }
 
       if(lifeTime[i] > 2000 && exploding[i]){                // if the block is old
-        brightness[i] -= 5;  // fade brightness
+        if(brightnes[i] > WHITEBRIGHT) brightnes[i] -= 2;  // fade brightness
         saturation[i] -= 5;                                  // fade saturation
         if(saturation[i] <= 0){  
           alive[i] = false;             // kill it off when faded
@@ -93,7 +93,7 @@ void blocksRender(){
         
         int pos = blockPos[i]+j;
         if(pos>0 && pos<NUMPIXELS){
-          mixColour(pos, hue[i], saturation[i], brightness[i]);
+          mixColour(pos, hue[i], saturation[i], brightnes[i]);
         }
         // Apply pixel types for serial printing
         // If in range
@@ -111,16 +111,16 @@ void blocksRender(){
       
       // Edge of explosion has pure colours (no mixing)
       if(vel[i] != 0){
-        for(int j=-blockSize[i]/2; j<-blockSize[i]/2 + 8; j++){
+        for(int j=-blockSize[i]/2; j<-blockSize[i]/2 + 10; j++){
           int pos = blockPos[i]+j;
           if(pos>0 && pos<NUMPIXELS){
-            applyColour(pos, hue[i], saturation[i], brightness[i]);
+            applyColour(pos, hue[i], saturation[i], brightnes[i]);
           } 
         }
-        for(int j=blockSize[i]/2; j<blockSize[i]/2 - 8; j++){
+        for(int j=blockSize[i]/2; j<blockSize[i]/2 - 10; j++){
           int pos = blockPos[i]+j;
           if(pos>0 && pos<NUMPIXELS){
-            applyColour(pos, hue[i], saturation[i], brightness[i]);
+            applyColour(pos, hue[i], saturation[i], brightnes[i]);
           } 
         }
       }
@@ -134,7 +134,7 @@ void blocksRender(){
         
         int pos = blockPos[i]+j;
         if(pos>0 && pos<NUMPIXELS){
-          applyColour(pos, hue[i], saturation[i], brightness[i]);
+          applyColour(pos, hue[i], saturation[i], brightnes[i]);
         }
         // Apply pixel types for serial printing
         // If in range
@@ -178,13 +178,19 @@ void initBlock(int pos){
       break;
     }
   }
+  while(blockAt(pos) > -1){
+    pos++;
+    if(pos >= NUMLDRS){
+      pos -= NUMLDRS;
+    }
+  }
   // Replace selected block
   blockPos[index] = LEDSpawnNum[pos];  // put in correct place
   alive[index] = true;                     // make alive
   lifeStart[index] = millis();             // give lifeStart time
   hue[index] = random(0,255);              // a random colour
   saturation[index] = 0;                   // start with no saturation (to fade in)
-  brightness[index] = 0;                   // start with no brightness (to fade in)
+  brightnes[index] = 0;                   // start with no brightness (to fade in)
   blockSize[index] = INITBLOCKSIZE;          // the initial size of the block
   exploding[index] = false;                // make sure it's not exploding to start with
 
@@ -197,7 +203,7 @@ void explode(int target){
   targetVel[target] = MAXVEL;     // change the target velocity
   exploding[target] = true;       // make explode
   saturation[target] = 255;       // Full saturation
-  brightness[target] = 255;
+  brightnes[target] = 255;
   lifeStart[target] = millis();   // Restart life clock
   if(printTrigs){
     Serial.print(" | targetVel of[");

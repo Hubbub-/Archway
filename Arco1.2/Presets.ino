@@ -2,10 +2,14 @@ void preset(int value){
   Serial.print("Preset:");
   Serial.println(value);
   if(value > 0){
+    hue1 = random(0,255);
+    int hue2temp = hue1+random(70,120);
+    if(hue2temp > 255) hue2temp -= 255;
+    hue2 = hue2temp;
     for(int i=0; i<NUMBLOCKS; i++){
       blockSize[i] = 0;
       blockPos[i] = 0;
-      brightness[i] = 255;
+      brightnes[i] = 255;
       saturation[i] = 255;
       blockSize[i] = 0;
       strobeType[i] = 0;
@@ -14,15 +18,11 @@ void preset(int value){
       spinSpeed[i] = 1;
       reverse[i] = false;
       downOnly[i] = false;
-      hue1 = random(0,255);
-      int hue2temp = hue1+random(70+120);
-      if(hue2temp > 255) hue2temp -= 255;
-      hue2 = hue2temp;
       hue[i] = hue1;
     }
   }
 
-  else if(value == 2){             // half blue, half red, switching
+  if(value == 1){             // half blue, half red, switching
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     hue[0] = hue1; 
@@ -34,7 +34,7 @@ void preset(int value){
     switchSpeed = 2;
   }
 
-  else if(value == 3){            // half blue, half red, spinning slow
+  else if(value == 2){            // half blue, half red, spinning slow
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     spinning[0] = true;
@@ -49,7 +49,7 @@ void preset(int value){
     initPos[1] = blockPos[1];
   }
 
-  else if(value == 4){            // half blue, half red, spinning fast
+  else if(value == 3){            // half blue, half red, spinning fast
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     spinning[0] = true;
@@ -58,13 +58,13 @@ void preset(int value){
     hue[0] = hue1;
     blockSize[1] = NUMPIXELS/2;
     blockPos[1] = NUMPIXELS*0.75;
-    hue[1] = hue;
+    hue[1] = hue2;
     spinning[1] = true;
     spinSpeed[1] = 2;
     initPos[1] = blockPos[1];
   }
 
-  else if(value == 5){            // half blue, half red, switching, strobing white blocks alternating
+  else if(value == 4){            // half blue, half red, switching, strobing white blocks alternating
     for(int b=0; b<4; b++){
       blockSize[b] = NUMPIXELS/2;
     }
@@ -85,7 +85,7 @@ void preset(int value){
     strobeSpeed[3] = 1;
   }
 
-  else if(value == 6){            // red and white quarters, switching
+  else if(value == 5){            // red and white quarters, switching
     hue[0] = hue2; 
     saturation[1] = 0;
     hue[2] = hue2; 
@@ -98,7 +98,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 7){            // red and white quarters, spinning slow
+  else if(value == 6){            // red and white quarters, spinning slow
     hue[0] = hue2; 
     saturation[1] = 0;
     hue[2] = hue2; 
@@ -112,7 +112,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 8){            // red and white quarters, spinning fast
+  else if(value == 7){            // red and white quarters, spinning fast
     hue[0] = hue2; 
     saturation[1] = 0;
     hue[2] = hue2; 
@@ -126,7 +126,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 9){            // red with white blocks strobing
+  else if(value == 8){            // red with white blocks strobing
     for(int b=0; b<4; b++){
       blockSize[b] = NUMPIXELS/2;
     }
@@ -147,7 +147,7 @@ void preset(int value){
     strobeSpeed[3] = 1;
   }
 
-  else if(value == 10){            // half blue, half red, switching, strobing white blocks alternating
+  else if(value == 9){            // half blue, half red, switching, strobing white blocks alternating
     for(int b=0; b<4; b++){
       blockSize[b] = NUMPIXELS/2;
     }
@@ -167,19 +167,8 @@ void preset(int value){
     strobeType[3] = 3;
     strobeSpeed[3] = 2;
   }
-  
-  else if(value == 11){            // four white eighths, spinning 
-    for(int b=0; b<3; b++){
-      blockSize[b] = NUMPIXELS/16;
-      blockPos[b] = ((b*2+1)*0.166)*NUMPIXELS;
-      saturation[b] = 0;
-      spinning[b] = true;
-      spinSpeed[b] = 1.33;
-      initPos[b] = blockPos[b];
-    }
-  }
 
-  else if(value == 12){            // four blue eighths, spinning 
+  else if(value == 10){            // four blue eighths, spinning 
     for(int b=0; b<3; b++){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.166)*NUMPIXELS;
@@ -190,7 +179,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 13){            // four red eighths, spinning 
+  else if(value == 11){            // four red eighths, spinning 
     for(int b=0; b<3; b++){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.166)*NUMPIXELS;
@@ -201,12 +190,11 @@ void preset(int value){
     }
   }
 
-  else if(value == 14){            // three white eighths, switching, strobing
+  else if(value == 12){            // three eighths, switching, strobing
     switchSpeed=1;
     for(int b=0; b<7; b+=2){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.071)*NUMPIXELS;
-      saturation[b] = 0;
       initPos[b] = blockPos[b];
       strobeType[b] = 4;
       strobeSpeed[b] = 2;
@@ -214,19 +202,17 @@ void preset(int value){
     for(int b=1; b<7; b+=2){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.071)*NUMPIXELS;
-      saturation[b] = 0;
       initPos[b] = blockPos[b];
       strobeType[b] = 5;
       strobeSpeed[b] = 2;
     }
   }
   
-  else if(value == 15){            // three white eighths, switching, strobing slow
+  else if(value == 13){            // three eighths, switching, strobing slow
     switchSpeed=1;
     for(int b=0; b<7; b+=2){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.071)*NUMPIXELS;
-      saturation[b] = 0;
       initPos[b] = blockPos[b];
       strobeType[b] = 4;
       strobeSpeed[b] = 4;
@@ -234,32 +220,29 @@ void preset(int value){
     for(int b=1; b<7; b+=2){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = ((b*2+1)*0.071)*NUMPIXELS;
-      saturation[b] = 0;
       initPos[b] = blockPos[b];
       strobeType[b] = 5;
       strobeSpeed[b] = 4;
     }
   }
 
-  else if(value == 16){            // half white, spinning slow
+  else if(value == 14){            // half, spinning slow
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     spinning[0] = true;
     spinSpeed[0] = 1;
     initPos[0] = blockPos[0];
-    saturation[0] = 0;
   }
 
-  else if(value == 17){            // half white, spinning fast
+  else if(value == 15){            // half, spinning fast
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     spinning[0] = true;
     spinSpeed[0] = 2;
     initPos[0] = blockPos[0];
-    saturation[0] = 0;
   }
 
-  else if(value == 18){            // half white, spinning slow, blinking
+  else if(value == 16){            // half, spinning slow, blinking
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
     spinning[0] = true;
@@ -267,13 +250,11 @@ void preset(int value){
     strobeSpeed[0] = 4;
     spinSpeed[0] = 2;
     initPos[0] = blockPos[0];
-    saturation[0] = 0;
   }
 
-  else if(value == 19){            // half white, spinning fast, with red segment in dark
+  else if(value == 17){            // half blue, spinning fast, with red segment in dark
     blockSize[0] = NUMPIXELS/2;
     blockPos[0] = NUMPIXELS/4;
-    saturation[0] = 0;
     blockSize[1] = NUMPIXELS/24;
     blockPos[1] = NUMPIXELS*0.75;
     hue[1] = hue2;
@@ -284,11 +265,11 @@ void preset(int value){
     }
   }
 
-  else if(value == 20){            // red and white quarters, switching
-    brightness[0] = 0; 
-    saturation[1] = 0;
-    brightness[2] = 0; 
-    saturation[3] = 0;
+  else if(value == 18){            // red and blue quarters, switching
+    brightnes[0] = 0; 
+    hue[1] = hue2;
+    brightnes[2] = 0; 
+    hue[3] = hue2;
     switchSpeed = 2;
     for(int b=0; b<4; b++){
       blockSize[b] = NUMPIXELS/4;
@@ -297,11 +278,11 @@ void preset(int value){
     }
   }
 
-  else if(value == 21){            // red and white quarters, switching
-    brightness[0] = 0; 
-    saturation[1] = 0;
-    brightness[2] = 0; 
-    saturation[3] = 0;
+  else if(value == 19){            // red and white quarters, switching, blinking
+    brightnes[0] = 0; 
+    hue[1] = hue1;
+    brightnes[2] = 0; 
+    hue[3] = hue2;
     switchSpeed = 2;
     strobeType[1] = 6;
     strobeSpeed[1] = 4;
@@ -314,11 +295,11 @@ void preset(int value){
     }
   }
 
-  else if(value == 22){            // red and white quarters, switching
-    brightness[0] = 0; 
-    saturation[1] = 0;
-    brightness[2] = 0; 
-    saturation[3] = 0;
+  else if(value == 20){            // red and white quarters, switching, blinking in middle
+    brightnes[0] = 0; 
+    hue[1] = hue1;
+    brightnes[2] = 0; 
+    hue[3] = hue2;
     switchSpeed = 2;
     strobeType[1] = 7;
     strobeSpeed[1] = 4;
@@ -331,9 +312,8 @@ void preset(int value){
     }
   }
 
-  else if(value == 23){            // white half, switching, with red strobe in darkness
-    saturation[0] = 0;
-    brightness[1] = 0; 
+  else if(value == 21){            // blue half, switching, with red strobe in darkness
+    brightnes[1] = 0; 
     switchSpeed = 2;
     for(int b=0; b<2; b++){
       blockSize[b] = NUMPIXELS/2;
@@ -342,7 +322,6 @@ void preset(int value){
     }
     for(int b=2; b<4; b++){
       blockSize[b] = NUMPIXELS/8;
-//      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
       strobeSpeed[b] = 2;
       hue[b] = hue2;
     }
@@ -352,50 +331,10 @@ void preset(int value){
     strobeType[3] = 8;
   }
 
-  else if(value == 24){            // white half, switching, with blue strobe in darkness
-    saturation[0] = 0;
-    brightness[1] = 0; 
-    switchSpeed = 2;
-    for(int b=0; b<2; b++){
-      blockSize[b] = NUMPIXELS/2;
-      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
-      switching[b] = true;
-    }
-    for(int b=2; b<4; b++){
-      blockSize[b] = NUMPIXELS/8;
-      strobeSpeed[b] = 2;
-      hue[b] = hue1;
-    }
-    blockPos[2] = NUMPIXELS*0.25;
-    blockPos[3] = NUMPIXELS*0.75;
-    strobeType[2] = 9;
-    strobeType[3] = 8;
-  }
 
-  else if(value == 25){            // red half, switching, with white strobe in darkness
-    hue[0] = hue2;
-    brightness[1] = 0; 
-    switchSpeed = 2;
-    for(int b=0; b<2; b++){
-      blockSize[b] = NUMPIXELS/2;
-      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
-      switching[b] = true;
-    }
-    for(int b=2; b<4; b++){
-      blockSize[b] = NUMPIXELS/6;
-//      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
-      strobeSpeed[b] = 2;
-      saturation[b] = 0;
-    }
-    blockPos[2] = NUMPIXELS*0.25;
-    blockPos[3] = NUMPIXELS*0.75;
-    strobeType[2] = 9;
-    strobeType[3] = 8;
-  }
-
-  else if(value == 26){            // red half, switching, with white strobe in darkness
+  else if(value == 22){            // coloured half, switching, with white strobe in darkness
     hue[0] = hue1;
-    brightness[1] = 0; 
+    brightnes[1] = 0; 
     switchSpeed = 2;
     for(int b=0; b<2; b++){
       blockSize[b] = NUMPIXELS/2;
@@ -404,7 +343,6 @@ void preset(int value){
     }
     for(int b=2; b<4; b++){
       blockSize[b] = NUMPIXELS/6;
-//      blockPos[b] = ((b*2+1)*0.25)*NUMPIXELS;
       strobeSpeed[b] = 2;
       saturation[b] = 0;
     }
@@ -414,38 +352,24 @@ void preset(int value){
     strobeType[3] = 8;
   }
 
-  else if(value == 27){            // two white eighths, spinning opposite directions
+  else if(value == 23){            // two segments, spinning opposite directions
     spinSpeed[0] = 1;
     spinSpeed[1] = 1;
     reverse[1] = true;
     for(int b=0; b<2; b++){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = NUMPIXELS/2;
-      saturation[b] = 0;
       spinning[b] = true;
       initPos[b] = blockPos[b];
     }
   }
 
-  else if(value == 28){            // two red eighths, spinning opposite directions
+  else if(value == 24){            // different coloured segments, spinning opposite directions
     spinSpeed[0] = 1;
     spinSpeed[1] = 1;
     reverse[1] = true;
-    for(int b=0; b<2; b++){
-      blockSize[b] = NUMPIXELS/16;
-      blockPos[b] = NUMPIXELS/2;
-      hue[b] = hue2;
-      spinning[b] = true;
-      initPos[b] = blockPos[b];
-    }
-  }
-
-  else if(value == 29){            // white and red eighths, spinning opposite directions
-    spinSpeed[0] = 1;
-    spinSpeed[1] = 1;
-    reverse[1] = true;
-    hue[0] = hue2;
-    saturation[1] = 0;
+    hue[0] = hue1;
+    hue[1] = hue2;
     for(int b=0; b<2; b++){
       blockSize[b] = NUMPIXELS/16;
       blockPos[b] = NUMPIXELS/2;
@@ -454,35 +378,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 30){            // two white segments falling from top
-    spinSpeed[0] = 1;
-    spinSpeed[1] = 1;
-    reverse[1] = true;
-    for(int b=0; b<2; b++){
-      blockSize[b] = NUMPIXELS/16;
-      blockPos[b] = NUMPIXELS/2;
-      spinning[b] = true;
-      saturation[b] = 0;
-      initPos[b] = blockPos[b];
-      downOnly[b] = true;
-    }
-  }
-
-  else if(value == 31){            // two large white segments falling from top
-    spinSpeed[0] = 1;
-    spinSpeed[1] = 1;
-    reverse[1] = true;
-    for(int b=0; b<2; b++){
-      blockSize[b] = NUMPIXELS/8;
-      blockPos[b] = NUMPIXELS/2;
-      spinning[b] = true;
-      saturation[b] = 0;
-      initPos[b] = blockPos[b];
-      downOnly[b] = true;
-    }
-  }
-
-  else if(value == 32){            // two red segments falling from top
+  else if(value == 25){            // two red segments falling from top
     spinSpeed[0] = 1;
     spinSpeed[1] = 1;
     reverse[1] = true;
@@ -496,7 +392,7 @@ void preset(int value){
     }
   }
 
-  else if(value == 33){            // two blue segments falling from top
+  else if(value == 26){            // two blue segments falling from top
     spinSpeed[0] = 1;
     spinSpeed[1] = 1;
     reverse[1] = true;

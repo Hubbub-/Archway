@@ -44,7 +44,7 @@ void serialEvent() {
       Serial.println(triggering);
       Serial.println("force trigger(ft...) 0-13");
       Serial.println("force mode(fm...) 0-3");
-      Serial.println("force preset(fp...) 1-33");
+      Serial.println("force preset(fp...) 2-33");
     }
     
 
